@@ -1,0 +1,10 @@
+{
+  "name": "lexiflow-data-builder",
+  "version": "1.0.0",
+  "description": "LexiFlow Vocabulary Data Builder",
+  "type": "module",
+  "scripts": {
+    "build:vocabulary": "node scripts/build-vocabulary.mjs"
+  },
+  "dependencies": {}
+}

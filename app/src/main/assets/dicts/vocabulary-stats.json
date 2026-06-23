@@ -1,0 +1,12 @@
+{
+  "totalUniqueWords": 4864,
+  "categoryBreakdown": {
+    "cet4": 1500,
+    "cet6": 1500,
+    "ielts": 1500,
+    "toefl": 1500,
+    "coder": 1500
+  },
+  "timestamp": 1782244094666,
+  "buildVersion": "2.0.0"
+}

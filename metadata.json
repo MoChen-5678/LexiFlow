@@ -1,0 +1,6 @@
+{
+  "name": "LexiFlow",
+  "description": "A muscle-memory and spaced-repetition based English vocabulary app with dual pronunciation (US/UK), 5 game modes, and SM-2 memory curve tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
