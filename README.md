@@ -11,7 +11,7 @@ docker compose up -d --build
 curl http://127.0.0.1:5000/health
 ```
 
-已有离线镜像包时，可以直接加载并运行。
+离线部署包内含镜像、Compose 配置和启动脚本。解压后运行 `sh deploy.sh` 即可加载镜像、启动服务并等待健康检查通过。也可以手动加载镜像并运行独立容器。
 
 ```sh
 docker load -i lexiflow-api-1.0.tar.gz
