@@ -274,6 +274,15 @@ class QwertyViewModel(
         }
     }
 
+    fun updateStudyPlan(newWords: Int, reviews: Int, sessionSize: Int) {
+        dailyNewWordsTarget.value = newWords.coerceIn(5, 50)
+        dailyReviewTarget.value = reviews.coerceIn(5, 60)
+        wordsPerSession.value = sessionSize.coerceIn(20, 100)
+        prefs.edit().putInt("daily_new_words", dailyNewWordsTarget.value)
+            .putInt("daily_reviews", dailyReviewTarget.value)
+            .putInt("words_per_session", wordsPerSession.value).apply()
+    }
+
     fun updateSettings(
         sound: Boolean,
         trans: Boolean,
@@ -310,7 +319,7 @@ class QwertyViewModel(
     // 2. Due Correct Reviews
     // 3. Brand New Words (unlearned, up to custom target)
     // 4. Fill to minimum 20 words if total is insufficient
-    fun startPracticeSession(mode: GameMode, usePersonalizedPlan: Boolean = false) {
+    fun startPracticeSession(mode: GameMode, usePersonalizedPlan: Boolean = false, mistakesOnly: Boolean = false) {
         viewModelScope.launch {
             loadSentenceExamples()
             repository.ensureWordsPopulated(getApplication())
@@ -318,8 +327,9 @@ class QwertyViewModel(
             val totalLimit = wordsPerSession.value.coerceAtLeast(20)
             val currentCategoryWords = repository.getWordsWithProgressByCategory(_selectedCategory.value).first()
             val enrichedCategoryWords = currentCategoryWords.map { enrichWordWithProgress(it) }.filter {
-                mode !in listOf(GameMode.TYPING, GameMode.CLOZE) ||
-                    (it.word.exampleSentence.isNotBlank() && sentenceContains(it.word.exampleSentence, it.word.word))
+                (!mistakesOnly || (it.progress?.wrongAttempts ?: 0) > 0) &&
+                    (mode !in listOf(GameMode.TYPING, GameMode.CLOZE) ||
+                    (it.word.exampleSentence.isNotBlank() && sentenceContains(it.word.exampleSentence, it.word.word)))
             }
 
             val now = System.currentTimeMillis()

@@ -69,10 +69,11 @@ internal fun IeltsSetBrowser(speak: (String) -> Unit, modifier: Modifier = Modif
             }
         }
         items(sets.filter { it.getString("skill") == skill }, key = { it.getString("id") }) { set ->
-            ElevatedCard(onClick = { selected = set.toString() }, modifier = Modifier.fillMaxWidth()) {
+            Surface(onClick = { selected = set.toString() }, modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(set.getString("title"), style = MaterialTheme.typography.titleLarge)
-                    Text("${set.getJSONArray("questions").length()} 题 · 原创专项练习")
+                    Text("${set.getJSONArray("questions").length()} 题 · 原创专项练习", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(if (skill == "reading") "判断 · 选择 · 摘要填空" else "信息填空 · 选择")
                 }
             }
@@ -108,7 +109,7 @@ internal fun IeltsSetPlayer(set: JSONObject, speak: (String) -> Unit, back: () -
         }
         if (!listening || submitted) {
             item {
-                Card {
+                Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (listening) Text("听力原文", fontWeight = FontWeight.Bold)
                         Text(set.getString(if (listening) "script" else "passage"), style = MaterialTheme.typography.bodyLarge)
@@ -119,7 +120,7 @@ internal fun IeltsSetPlayer(set: JSONObject, speak: (String) -> Unit, back: () -
         items(questions, key = { it.getInt("id") }) { question ->
             val key = question.getInt("id").toString()
             val response = answers.optString(key)
-            Card(Modifier.fillMaxWidth()) {
+            Surface(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("$key. " + question.getString("prompt"), style = MaterialTheme.typography.titleMedium)
                     Text(question.getString("instruction"), style = MaterialTheme.typography.bodySmall)
@@ -134,7 +135,7 @@ internal fun IeltsSetPlayer(set: JSONObject, speak: (String) -> Unit, back: () -
                             }
                         }
                     } else {
-                        OutlinedTextField(value = response, onValueChange = {
+                        OutlinedTextField(shape = MaterialTheme.shapes.medium, value = response, onValueChange = {
                             responses = JSONObject(responses).put(key, it).toString()
                         }, readOnly = submitted, label = { Text("答案") }, modifier = Modifier.fillMaxWidth().testTag("ielts_input_$key"),
                             singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii))

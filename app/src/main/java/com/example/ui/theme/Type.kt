@@ -6,77 +6,25 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+private fun type(size: Int, height: Int, weight: FontWeight = FontWeight.Normal) = TextStyle(
+    fontFamily = FontFamily.SansSerif, fontWeight = weight, fontSize = size.sp,
+    lineHeight = height.sp, letterSpacing = 0.sp
+)
+
 val Typography = Typography(
-    // Large headers (e.g. Word lists names, massive statistics values)
-    displayLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 36.sp,
-        lineHeight = 44.sp,
-        letterSpacing = 0.sp
-    ),
-    displayMedium = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 28.sp,
-        lineHeight = 36.sp,
-        letterSpacing = 0.sp
-    ),
-    // Monospace styling for the typing word itself (crucial for visual spelling grid alignment)
-    headlineLarge = TextStyle(
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.Bold,
-        fontSize = 32.sp,
-        lineHeight = 40.sp,
-        letterSpacing = 1.sp
-    ),
-    headlineMedium = TextStyle(
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.Medium,
-        fontSize = 24.sp,
-        lineHeight = 32.sp,
-        letterSpacing = 0.5.sp
-    ),
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 20.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.15.sp
-    ),
-    titleMedium = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.1.sp
-    ),
-    bodyLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
-    ),
-    bodyMedium = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.25.sp
-    ),
-    labelLarge = TextStyle(
-        fontFamily = FontFamily.Monospace, // Monospace for stats and keyboard keys
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.1.sp
-    ),
-    labelMedium = TextStyle(
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.Medium,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
-    )
+    displayLarge = type(48, 56, FontWeight.SemiBold),
+    displayMedium = type(40, 48, FontWeight.SemiBold),
+    displaySmall = type(34, 42, FontWeight.SemiBold),
+    headlineLarge = type(30, 38, FontWeight.SemiBold),
+    headlineMedium = type(26, 34, FontWeight.SemiBold),
+    headlineSmall = type(23, 31, FontWeight.Medium),
+    titleLarge = type(20, 28, FontWeight.Medium),
+    titleMedium = type(16, 24, FontWeight.Medium),
+    titleSmall = type(14, 20, FontWeight.Medium),
+    bodyLarge = type(17, 27),
+    bodyMedium = type(15, 23),
+    bodySmall = type(13, 20),
+    labelLarge = type(14, 20, FontWeight.Medium),
+    labelMedium = type(12, 18, FontWeight.Medium),
+    labelSmall = type(11, 16, FontWeight.Medium)
 )

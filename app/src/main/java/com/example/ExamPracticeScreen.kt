@@ -152,7 +152,7 @@ internal fun ExamPracticeScreen(initialBook: String, speak: (String) -> Unit, ex
     }
 
     val questions = remember(batch) { if (batch.isEmpty()) JSONArray() else JSONArray(batch) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+    Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         FilterRow(exams, exam) { exam = it }
         FilterRow(mapOf("practice" to "模拟练习", "past" to if (exam == "ielts") "考生回忆" else "历年真题"), origin) { origin = it }
@@ -161,7 +161,7 @@ internal fun ExamPracticeScreen(initialBook: String, speak: (String) -> Unit, ex
         if (origin == "past" && (studyKey.isEmpty() || editKey)) {
             OutlinedTextField(value = keyInput, onValueChange = { keyInput = it }, label = { Text("个人学习码") },
                 singleLine = true, visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation())
-            Text("学习码可在部署主机的 /data/study-key 文件中查看。")
+            Text("请输入部署时生成的个人学习码。")
             Button(onClick = {
                 studyKey = keyInput.trim()
                 keyFile.writeText(studyKey)
