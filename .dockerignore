@@ -3,6 +3,7 @@
 !server/
 !server/*.py
 !app/src/main/assets/exam_questions.json
+!app/src/main/assets/ielts_sets.json
 !app/
 !app/src/
 !app/src/main/

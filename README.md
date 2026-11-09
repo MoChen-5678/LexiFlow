@@ -14,8 +14,8 @@ curl http://127.0.0.1:5000/health
 离线部署包内含镜像、Compose 配置和启动脚本。解压后运行 `sh deploy.sh` 即可加载镜像、启动服务并等待健康检查通过。也可以手动加载镜像并运行独立容器。
 
 ```sh
-docker load -i lexiflow-api-1.0.tar.gz
-docker run -d --name lexiflow-api --restart unless-stopped -p 5000:5000 -v lexiflow-questions:/data lexiflow-api:1.0
+docker load -i lexiflow-api-1.2.tar.gz
+docker run -d --name lexiflow-api --restart unless-stopped -p 5000:5000 -v lexiflow-questions:/data lexiflow-api:1.2
 ```
 
 服务监听 TCP 5000，仅返回 JSON 或音频。根路径返回 JSON 404。SQLite 题库保存在数据卷中，更新镜像时使用原来的数据卷。App 默认连接 `47.109.146.2:5000`，学习界面不显示地址。公网端口是否可达取决于主机防火墙和云安全组设置。
@@ -62,6 +62,15 @@ Git 版本查询优先通过 GH-Proxy，失败时切换到 ghfast。试卷和词
 
 模拟器连接本机 WSL 服务时可使用 `-PlexiflowHost=10.0.2.2` 编译。USB 真机本地测试可使用 `-PlexiflowHost=127.0.0.1` 编译，再运行 `adb reverse tcp:5000 tcp:5000`。
 
-朗读优先播放随 APK 安装的英式或美式音频，覆盖现有词库和内置听力材料。其他文本调用 Android 英语语音引擎，缺少语音、合成失败或启动超时则请求服务端合成。手动朗读可独立于自动发音设置工作。
+朗读可选择英式、美式口音及男声、女声。词库单词和整组雅思材料随 APK 提供四套离线音频。其他英文文本由服务端用所选英语声音合成，长文章会分段朗读。中文界面说明不参与英文朗读。设置中的「试听」播放当前声音。
 
 听写和拼写练习参考 [Qwerty Learner](https://github.com/RealKai42/qwerty-learner)。离线发音和服务端语音使用 [eSpeak NG](https://github.com/espeak-ng/espeak-ng)。在安装 eSpeak NG 和 libmp3lame 的 Linux 环境下，可用 `scripts/build-pronunciations.py` 重新生成音频包，两个参数分别为 App 的 assets 目录和 audio 输出目录。
+
+
+## 1.2 练习内容
+
+背词入口使用例句填空，依次显示英文挖空句、中文释义与答案输入框，提交后显示完整句、答案与下一词。已收录 4,088 个单词的实际使用例句，例句练习队列采用已配有效语境的词汇。例句来自 Tatoeba/ManyThings 和 Princeton WordNet，句子作者信息保存在 word_examples.json，许可文本随应用提供。
+
+雅思原创专项练习含两篇学术阅读、两段完整听力，共 40 题。每组共享文章或录音，支持 TRUE/FALSE/NOT GIVEN、选择题和限词填空。整组交卷后给出逐题答案、原文依据与中文解析，听力文字稿在交卷后显示。材料可离线作答及朗读。
+
+请同时升级 App 和服务端至 1.2，服务端新增 /api/ielts/sets，并为 /api/audio 增加 gender=male 或 gender=female 参数。

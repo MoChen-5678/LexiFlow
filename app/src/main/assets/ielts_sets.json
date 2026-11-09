@@ -1,0 +1,672 @@
+[
+  {
+    "id": "original-reading-urban-rivers",
+    "title": "城市河流修复",
+    "skill": "reading",
+    "instructions": "Reading Passage 1 has ten questions. You should spend about 20 minutes on Questions 1–10, which are based on the passage below.",
+    "passage": "Restoring Urban Rivers\n\nFor most of the twentieth century, many planners treated a river running through a city as a problem to be solved. Waterways were straightened into concrete channels, or buried in pipes beneath roads, so that floods could be moved quickly out of the city and land beside the water could be used for housing or industry. By the 1990s, however, engineers in several European and North American cities had begun to question this approach. Rivers were living systems, they argued, and could cool overheated streets, shelter wildlife and provide public space. The movement to bring these waterways back to the surface became known as urban river restoration.\n\nThe best-known type of project is daylighting, in which a buried stream is uncovered and returned to the open air. Supporters often describe daylighting as a simple case of undoing past mistakes, yet the actual work is rarely straightforward. A restored river must be designed to carry storm water that arrives in sudden, heavy bursts, which is different from the steady flow of a natural country stream. Engineers therefore combine natural features, such as stones, curves and planted banks, with hidden engineering, including wider culverts and overflow basins. Critics sometimes claim that these hybrid designs are too artificial to count as true restoration, but many ecologists reply that any river within a city is shaped by people and that the aim is a system that works, not a perfect copy of nature.\n\nEvidence of success is mixed. In one fictional three-year study used here as an illustration, a city uncovered a short stretch of river beside a former car park. Water temperature dropped, and records from local residents showed that more birds visited the area in summer than before the project. However, the number of fish in the new channel did not rise as expected, a result the study team linked partly to the distance between the site and the nearest healthy river source.\n\nCost is the main reason projects are delayed. Removing a concrete channel and reshaping a bank can be far more expensive than carrying out basic repairs to the existing channel, and local councils frequently face pressure to spend money on schools or transport instead. In response, some cities have divided large schemes into stages, completing small sections whenever funding becomes available. This approach spreads the cost over many years, though it can leave a restored stretch looking isolated until surrounding pieces are finished.\n\nPublic support is another factor that shapes outcomes. When residents are involved in decisions about planting or the design of footpaths, they tend to take greater care of the finished area. Where projects have been introduced without any consultation, by contrast, some users have complained that safe routes to work were lost when paths were narrowed to make space for vegetation.\n\nIt would be easy to read the growth in the number of daylighting schemes as proof that the approach has been settled. It has not. Debates continue over how much engineering is acceptable, how success should be measured, and who should pay. Real restoration, in the sense of a river returning to the state it had before the city was built, is almost never achieved. The realistic goal, most practitioners now agree, is a river that is healthier and more useful than the one it replaces, while being honest about the compromises this involves.",
+    "questions": [
+      {
+        "id": 1,
+        "type": "tfng",
+        "instruction": "Do the following statements agree with the information given in the passage? Write TRUE, FALSE or NOT GIVEN.",
+        "prompt": "Restoration projects normally remove all engineered structures from a river.",
+        "choices": [
+          "TRUE",
+          "FALSE",
+          "NOT GIVEN"
+        ],
+        "answers": [
+          "FALSE"
+        ],
+        "wordLimit": 0,
+        "explanation": "第二段说明设计结合自然景观与隐蔽工程，因此“移除所有工程结构”与原文矛盾。",
+        "evidence": "Engineers therefore combine natural features, such as stones, curves and planted banks, with hidden engineering, including wider culverts and overflow basins."
+      },
+      {
+        "id": 2,
+        "type": "tfng",
+        "instruction": "Do the following statements agree with the information given in the passage? Write TRUE, FALSE or NOT GIVEN.",
+        "prompt": "Restored city rivers must cope with water levels that change sharply rather than staying even.",
+        "choices": [
+          "TRUE",
+          "FALSE",
+          "NOT GIVEN"
+        ],
+        "answers": [
+          "TRUE"
+        ],
+        "wordLimit": 0,
+        "explanation": "'storm water that arrives in sudden, heavy bursts'（暴雨来水突发而猛烈）即水位变化剧烈，且紧跟对照 'different from the steady flow'（不像自然乡村河道那样流量平稳）。题干 'change sharply rather than staying even' 是对原文的转述，故TRUE。",
+        "evidence": "A restored river must be designed to carry storm water that arrives in sudden, heavy bursts, which is different from the steady flow of a natural country stream."
+      },
+      {
+        "id": 3,
+        "type": "tfng",
+        "instruction": "Do the following statements agree with the information given in the passage? Write TRUE, FALSE or NOT GIVEN.",
+        "prompt": "The city in the example study uncovered the river after carrying out a survey of residents' views on the design.",
+        "choices": [
+          "TRUE",
+          "FALSE",
+          "NOT GIVEN"
+        ],
+        "answers": [
+          "NOT GIVEN"
+        ],
+        "wordLimit": 0,
+        "explanation": "例证只说河在旧停车场旁露出，居民记录的是鸟类数量；文中从未提到工程前进行过居民意见调查。'records from local residents' 是事后观察记录，不是设计调查。故NOT GIVEN。",
+        "evidence": "In one fictional three-year study used here as an illustration, a city uncovered a short stretch of river beside a former car park."
+      },
+      {
+        "id": 4,
+        "type": "tfng",
+        "instruction": "Do the following statements agree with the information given in the passage? Write TRUE, FALSE or NOT GIVEN.",
+        "prompt": "In practice, goals such as returning a river to its pre-city condition are hardly ever reached.",
+        "choices": [
+          "TRUE",
+          "FALSE",
+          "NOT GIVEN"
+        ],
+        "answers": [
+          "TRUE"
+        ],
+        "wordLimit": 0,
+        "explanation": "'Real restoration, in the sense of a river returning to the state it had before the city was built, is almost never achieved' 中 'almost never achieved' 对应 'hardly ever reached'，'before the city was built' 对应 'pre-city condition'。故TRUE。",
+        "evidence": "Real restoration, in the sense of a river returning to the state it had before the city was built, is almost never achieved."
+      },
+      {
+        "id": 5,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B, C or D.",
+        "prompt": "What view of daylighting does the writer present in the second paragraph?",
+        "choices": [
+          "It is usually simpler than supporters expect.",
+          "It creates a river that behaves like a quiet country stream.",
+          "It combines natural-looking features with engineered ones.",
+          "It is opposed by most ecologists."
+        ],
+        "answers": [
+          "It combines natural-looking features with engineered ones."
+        ],
+        "wordLimit": 0,
+        "explanation": "原文 'Engineers therefore combine natural features … with hidden engineering' 明确指出工程既保留自然外观又暗藏工程设施。B与 'different from the steady flow' 相反；D与生态学家辩护立场相反；A的 'simpler' 亦与 'rarely straightforward' 矛盾。故选C。",
+        "evidence": "Engineers therefore combine natural features, such as stones, curves and planted banks, with hidden engineering, including wider culverts and overflow basins."
+      },
+      {
+        "id": 6,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B, C or D.",
+        "prompt": "What did the fictional example study link the low fish numbers to?",
+        "choices": [
+          "the poor quality of the water in the new channel",
+          "the cold temperature of the uncovered water",
+          "how far the site was from a healthy river source",
+          "the small size of the stretch that was uncovered"
+        ],
+        "answers": [
+          "how far the site was from a healthy river source"
+        ],
+        "wordLimit": 0,
+        "explanation": "原文 'linked partly to the distance between the site and the nearest healthy river source'，'nearest healthy river source' 即鱼源充足的河，'distance' 即 'how far'。C为正确转述；A、B在文中无据，D提到支路长短但未与鱼群关联。",
+        "evidence": "However, the number of fish in the new channel did not rise as expected, a result the study team linked partly to the distance between the site and the nearest healthy river source."
+      },
+      {
+        "id": 7,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B, C or D.",
+        "prompt": "According to the passage, what is a disadvantage of completing projects in stages?",
+        "choices": [
+          "The total cost of the work increases each year.",
+          "Unfinished stretches may look out of place for a while.",
+          "Later sections are refused funding more often.",
+          "Residents lose interest before the final stage is complete."
+        ],
+        "answers": [
+          "Unfinished stretches may look out of place for a while."
+        ],
+        "wordLimit": 0,
+        "explanation": "原文 'it can leave a restored stretch looking isolated until surrounding pieces are finished'，'looking isolated' 对应 'out of place'，'until surrounding pieces are finished' 对应 'for a while'。文中未提总花费逐年增加、后续更难获资或居民失去兴趣。",
+        "evidence": "This approach spreads the cost over many years, though it can leave a restored stretch looking isolated until surrounding pieces are finished."
+      },
+      {
+        "id": 8,
+        "type": "completion",
+        "instruction": "Complete each sentence with NO MORE THAN TWO WORDS from the passage.",
+        "prompt": "Where projects were set up without any consultation, some users said that safe _____ to work had been lost.",
+        "choices": [],
+        "answers": [
+          "routes"
+        ],
+        "wordLimit": 2,
+        "explanation": "原文 'some users have complained that safe routes to work were lost'，空处需 'routes'，全文不超过两个词。填 'routes to work' 即整段原句片段，亦接受。",
+        "evidence": "Where projects have been introduced without any consultation, by contrast, some users have complained that safe routes to work were lost when paths were narrowed to make space for vegetation."
+      },
+      {
+        "id": 9,
+        "type": "completion",
+        "instruction": "Complete each sentence with NO MORE THAN TWO WORDS from the passage.",
+        "prompt": "When residents help decide where trees and plants go, they usually look after the finished area with more _____.",
+        "choices": [],
+        "answers": [
+          "care"
+        ],
+        "wordLimit": 1,
+        "explanation": "原文 'they tend to take greater care of the finished area'，'take greater care of' = 'look after … with more care'；'planting' 对应 'where trees and plants go'。空处只填一个词 'care'。",
+        "evidence": "When residents are involved in decisions about planting or the design of footpaths, they tend to take greater care of the finished area."
+      },
+      {
+        "id": 10,
+        "type": "completion",
+        "instruction": "Complete each sentence with NO MORE THAN TWO WORDS from the passage.",
+        "prompt": "Most practitioners now agree that the realistic target is a river that is both healthier and more _____ than the one it replaces.",
+        "choices": [],
+        "answers": [
+          "useful"
+        ],
+        "wordLimit": 1,
+        "explanation": "原文 'a river that is healthier and more useful than the one it replaces' 与题干 'both healthier and more _____ than the one it replaces' 直接对应，空处为 'useful'。",
+        "evidence": "The realistic goal, most practitioners now agree, is a river that is healthier and more useful than the one it replaces, while being honest about the compromises this involves."
+      }
+    ],
+    "source": "LexiFlow 原创专项练习",
+    "version": 2,
+    "speech": "Restoring Urban Rivers\n\nFor most of the twentieth century, many planners treated a river running through a city as a problem to be solved. Waterways were straightened into concrete channels, or buried in pipes beneath roads, so that floods could be moved quickly out of the city and land beside the water could be used for housing or industry. By the 1990s, however, engineers in several European and North American cities had begun to question this approach. Rivers were living systems, they argued, and could cool overheated streets, shelter wildlife and provide public space. The movement to bring these waterways back to the surface became known as urban river restoration.\n\nThe best-known type of project is daylighting, in which a buried stream is uncovered and returned to the open air. Supporters often describe daylighting as a simple case of undoing past mistakes, yet the actual work is rarely straightforward. A restored river must be designed to carry storm water that arrives in sudden, heavy bursts, which is different from the steady flow of a natural country stream. Engineers therefore combine natural features, such as stones, curves and planted banks, with hidden engineering, including wider culverts and overflow basins. Critics sometimes claim that these hybrid designs are too artificial to count as true restoration, but many ecologists reply that any river within a city is shaped by people and that the aim is a system that works, not a perfect copy of nature.\n\nEvidence of success is mixed. In one fictional three-year study used here as an illustration, a city uncovered a short stretch of river beside a former car park. Water temperature dropped, and records from local residents showed that more birds visited the area in summer than before the project. However, the number of fish in the new channel did not rise as expected, a result the study team linked partly to the distance between the site and the nearest healthy river source.\n\nCost is the main reason projects are delayed. Removing a concrete channel and reshaping a bank can be far more expensive than carrying out basic repairs to the existing channel, and local councils frequently face pressure to spend money on schools or transport instead. In response, some cities have divided large schemes into stages, completing small sections whenever funding becomes available. This approach spreads the cost over many years, though it can leave a restored stretch looking isolated until surrounding pieces are finished.\n\nPublic support is another factor that shapes outcomes. When residents are involved in decisions about planting or the design of footpaths, they tend to take greater care of the finished area. Where projects have been introduced without any consultation, by contrast, some users have complained that safe routes to work were lost when paths were narrowed to make space for vegetation.\n\nIt would be easy to read the growth in the number of daylighting schemes as proof that the approach has been settled. It has not. Debates continue over how much engineering is acceptable, how success should be measured, and who should pay. Real restoration, in the sense of a river returning to the state it had before the city was built, is almost never achieved. The realistic goal, most practitioners now agree, is a river that is healthier and more useful than the one it replaces, while being honest about the compromises this involves.",
+    "script": ""
+  },
+  {
+    "id": "original-reading-seed-banks",
+    "title": "种子库的科学价值",
+    "skill": "reading",
+    "instructions": "Reading Passage 2 has ten questions. You should spend about 20 minutes on Questions 11–20, which are based on the passage below.",
+    "passage": "The Scientific Value of Seed Banks\n\nA seed bank is a collection of seeds stored under controlled conditions so that they remain able to grow long after they were collected. The largest international facilities hold hundreds of thousands of samples, each representing a particular kind of plant gathered from a specific place. The main reason for keeping such collections is insurance. Farming depends on a remarkably small number of crop types, and a disease or a change in climate can threaten a popular variety very quickly. A stored sample may contain genes that allow a related plant to survive heat, salt or pests, and these genes can be crossed into crops that people rely on.\n\nStorage is less simple than it sounds. Seeds must be dried to a low moisture level and then kept cold, which slows the chemical processes that eventually stop them from growing. Even so, seeds do not last forever. Many remain capable of growth for decades, but some, such as those of certain tropical trees, lose their ability to sprout within a short time however carefully they are handled. For these troublesome species, researchers depend on living plants in gardens or on very cold storage, which is far more costly.\n\nA second value of seed banks lies in what they can tell scientists about change over time. Because seeds were gathered at known dates and locations, comparing old samples with newly collected ones can reveal shifts in the size, shape or genetics of a species. In one fictional study used here for practice, researchers grew seeds collected from a meadow on the same site in three different decades. The plants from the oldest seeds flowered later than the recent ones, which the authors treated as a possible sign of adaptation to warmer springs, though they themselves suggested that other explanations could not be ruled out.\n\nSuch use raises practical difficulties. A seed sample is only useful if it has been properly recorded: where it came from, when it was gathered and how it was stored. Where records are incomplete, results can be misleading, because a difference between two samples may reflect the way they were kept rather than any real change in the plants. Some collections from the mid-twentieth century were stored with limited detail about the conditions involved, and researchers must therefore be cautious when using them.\n\nFinally, seed banks are not only scientific tools; they are also the subjects of political discussion. Countries disagree about who owns the genetic material of plants that grow within their borders, and about whether stored samples should be freely shared. International agreements have tried to balance these interests, but the rules remain complex, and some researchers argue that they slow down the work of comparing collections across countries. What is clear is that the collections are more valuable when they are shared, yet sharing is exactly what disagreements make difficult.",
+    "questions": [
+      {
+        "id": 1,
+        "type": "tfng",
+        "instruction": "Do the following statements agree with the information given in the passage? Write TRUE, FALSE or NOT GIVEN.",
+        "prompt": "The main purpose of keeping seed collections is to make farming more profitable.",
+        "choices": [
+          "TRUE",
+          "FALSE",
+          "NOT GIVEN"
+        ],
+        "answers": [
+          "FALSE"
+        ],
+        "wordLimit": 0,
+        "explanation": "原文明确 'The main reason for keeping such collections is insurance.'（保险/安全保障），而非增加农业利润；原文讨论抗病、抗热、抗盐等保险用途，从未提及 'profitable'。故FALSE。",
+        "evidence": "The main reason for keeping such collections is insurance."
+      },
+      {
+        "id": 2,
+        "type": "tfng",
+        "instruction": "Do the following statements agree with the information given in the passage? Write TRUE, FALSE or NOT GIVEN.",
+        "prompt": "Seeds of some tropical trees can be kept for long periods if they are handled carefully enough.",
+        "choices": [
+          "TRUE",
+          "FALSE",
+          "NOT GIVEN"
+        ],
+        "answers": [
+          "FALSE"
+        ],
+        "wordLimit": 0,
+        "explanation": "原文 'some, such as those of certain tropical trees, lose their ability to sprout within a short time however carefully they are handled'，'however carefully' 即无论多小心也无法长期保存，与题干 'can be kept for long periods if handled carefully enough' 相反，故FALSE。",
+        "evidence": "Many remain capable of growth for decades, but some, such as those of certain tropical trees, lose their ability to sprout within a short time however carefully they are handled."
+      },
+      {
+        "id": 3,
+        "type": "tfng",
+        "instruction": "Do the following statements agree with the information given in the passage? Write TRUE, FALSE or NOT GIVEN.",
+        "prompt": "The writers of the fictional meadow study were certain that the later flowering was caused by warmer springs.",
+        "choices": [
+          "TRUE",
+          "FALSE",
+          "NOT GIVEN"
+        ],
+        "answers": [
+          "FALSE"
+        ],
+        "wordLimit": 0,
+        "explanation": "原文 'which the authors treated as a possible sign of adaptation to warmer springs, though they themselves suggested that other explanations could not be ruled out'，'possible sign' 与 'other explanations could not be ruled out' 均表明不确定，与题干 'were certain' 相反，故FALSE。",
+        "evidence": "The plants from the oldest seeds flowered later than the recent ones, which the authors treated as a possible sign of adaptation to warmer springs, though they themselves suggested that other explanations could not be ruled out."
+      },
+      {
+        "id": 4,
+        "type": "tfng",
+        "instruction": "Do the following statements agree with the information given in the passage? Write TRUE, FALSE or NOT GIVEN.",
+        "prompt": "All the international seed bank facilities mentioned in the passage use the same storage methods.",
+        "choices": [
+          "TRUE",
+          "FALSE",
+          "NOT GIVEN"
+        ],
+        "answers": [
+          "NOT GIVEN"
+        ],
+        "wordLimit": 0,
+        "explanation": "文中只说大型国际设施储藏样本，提到对部分物种依赖活体植物或极低温储藏，但从未比较各国际设施是否采用相同储藏方法。故NOT GIVEN。",
+        "evidence": "The largest international facilities hold hundreds of thousands of samples, each representing a particular kind of plant gathered from a specific place."
+      },
+      {
+        "id": 5,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B, C or D.",
+        "prompt": "According to the first paragraph, why could a stored seed sample be important to farmers?",
+        "choices": [
+          "It may supply genes that help crops resist difficult conditions.",
+          "It can be planted instead of any crop that fails.",
+          "It allows farmers to grow a wider range of plants for profit.",
+          "It holds seeds that are larger than modern varieties."
+        ],
+        "answers": [
+          "It may supply genes that help crops resist difficult conditions."
+        ],
+        "wordLimit": 0,
+        "explanation": "原文 'A stored sample may contain genes that allow a related plant to survive heat, salt or pests, and these genes can be crossed into crops'，热、盐、害虫即 'difficult conditions'，可用于改良作物。B、C、D在文中均无依据。",
+        "evidence": "A stored sample may contain genes that allow a related plant to survive heat, salt or pests, and these genes can be crossed into crops that people rely on."
+      },
+      {
+        "id": 6,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B, C or D.",
+        "prompt": "In the fictional study mentioned in the third paragraph, what did researchers compare?",
+        "choices": [
+          "plants from seeds collected at the same place in different years",
+          "the genetics of tropical trees and meadow grasses",
+          "the growth of seeds kept in warm and cold conditions",
+          "plants grown from seeds taken from several different meadows"
+        ],
+        "answers": [
+          "plants from seeds collected at the same place in different years"
+        ],
+        "wordLimit": 0,
+        "explanation": "原文 'researchers grew seeds collected from a meadow on the same site in three different decades'，'same site' 对应 'the same place'，'three different decades' 对应 'different years'。B、C、D均无依据。",
+        "evidence": "In one fictional study used here for practice, researchers grew seeds collected from a meadow on the same site in three different decades."
+      },
+      {
+        "id": 7,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B, C or D.",
+        "prompt": "Why might comparisons of old and new samples give wrong conclusions?",
+        "choices": [
+          "Old seeds are usually too small to measure accurately.",
+          "Differences may come from storage conditions rather than the plants themselves.",
+          "Newly collected seeds are rarely recorded properly.",
+          "Living plants in gardens grow faster than stored seeds."
+        ],
+        "answers": [
+          "Differences may come from storage conditions rather than the plants themselves."
+        ],
+        "wordLimit": 0,
+        "explanation": "原文 'a difference between two samples may reflect the way they were kept rather than any real change in the plants'，'the way they were kept' 即储藏方式，'rather than any real change' 对应 'wrong conclusions'（假差异）。A、C、D在文中无据。",
+        "evidence": "Where records are incomplete, results can be misleading, because a difference between two samples may reflect the way they were kept rather than any real change in the plants."
+      },
+      {
+        "id": 8,
+        "type": "completion",
+        "instruction": "Complete each sentence with NO MORE THAN TWO WORDS from the passage.",
+        "prompt": "Seeds are first dried so that their _____ level is low, and then they are stored in the cold.",
+        "choices": [],
+        "answers": [
+          "moisture"
+        ],
+        "wordLimit": 1,
+        "explanation": "原文 'Seeds must be dried to a low moisture level and then kept cold'，题干 'their _____ level' 对应 'a low moisture level'，故填 'moisture'。",
+        "evidence": "Seeds must be dried to a low moisture level and then kept cold, which slows the chemical processes that eventually stop them from growing."
+      },
+      {
+        "id": 9,
+        "type": "completion",
+        "instruction": "Complete each sentence with NO MORE THAN TWO WORDS from the passage.",
+        "prompt": "For species that are hard to store, researchers depend on living plants or on very cold storage, which costs much _____.",
+        "choices": [],
+        "answers": [
+          "more"
+        ],
+        "wordLimit": 1,
+        "explanation": "原文 'very cold storage, which is far more costly' 与题干 'costs much _____' 同义，'far more costly' = 'costs much more'，只填 'more'。",
+        "evidence": "For these troublesome species, researchers depend on living plants in gardens or on very cold storage, which is far more costly."
+      },
+      {
+        "id": 10,
+        "type": "completion",
+        "instruction": "Complete each sentence with NO MORE THAN TWO WORDS from the passage.",
+        "prompt": "Collections are more valuable when they are shared, but disagreements make _____ difficult.",
+        "choices": [],
+        "answers": [
+          "sharing"
+        ],
+        "wordLimit": 1,
+        "explanation": "原文 'the collections are more valuable when they are shared, yet sharing is exactly what disagreements make difficult'，空处为 'sharing'。",
+        "evidence": "What is clear is that the collections are more valuable when they are shared, yet sharing is exactly what disagreements make difficult."
+      }
+    ],
+    "source": "LexiFlow 原创专项练习",
+    "version": 2,
+    "speech": "The Scientific Value of Seed Banks\n\nA seed bank is a collection of seeds stored under controlled conditions so that they remain able to grow long after they were collected. The largest international facilities hold hundreds of thousands of samples, each representing a particular kind of plant gathered from a specific place. The main reason for keeping such collections is insurance. Farming depends on a remarkably small number of crop types, and a disease or a change in climate can threaten a popular variety very quickly. A stored sample may contain genes that allow a related plant to survive heat, salt or pests, and these genes can be crossed into crops that people rely on.\n\nStorage is less simple than it sounds. Seeds must be dried to a low moisture level and then kept cold, which slows the chemical processes that eventually stop them from growing. Even so, seeds do not last forever. Many remain capable of growth for decades, but some, such as those of certain tropical trees, lose their ability to sprout within a short time however carefully they are handled. For these troublesome species, researchers depend on living plants in gardens or on very cold storage, which is far more costly.\n\nA second value of seed banks lies in what they can tell scientists about change over time. Because seeds were gathered at known dates and locations, comparing old samples with newly collected ones can reveal shifts in the size, shape or genetics of a species. In one fictional study used here for practice, researchers grew seeds collected from a meadow on the same site in three different decades. The plants from the oldest seeds flowered later than the recent ones, which the authors treated as a possible sign of adaptation to warmer springs, though they themselves suggested that other explanations could not be ruled out.\n\nSuch use raises practical difficulties. A seed sample is only useful if it has been properly recorded: where it came from, when it was gathered and how it was stored. Where records are incomplete, results can be misleading, because a difference between two samples may reflect the way they were kept rather than any real change in the plants. Some collections from the mid-twentieth century were stored with limited detail about the conditions involved, and researchers must therefore be cautious when using them.\n\nFinally, seed banks are not only scientific tools; they are also the subjects of political discussion. Countries disagree about who owns the genetic material of plants that grow within their borders, and about whether stored samples should be freely shared. International agreements have tried to balance these interests, but the rules remain complex, and some researchers argue that they slow down the work of comparing collections across countries. What is clear is that the collections are more valuable when they are shared, yet sharing is exactly what disagreements make difficult.",
+    "script": ""
+  },
+  {
+    "id": "original-listening-library",
+    "title": "图书馆入会咨询",
+    "skill": "listening",
+    "instructions": "Questions 21–30. You will hear a conversation between a woman and a library assistant about joining the library. Listen and answer the questions.",
+    "passage": "",
+    "script": "Woman: Good morning. I'd like to join the library, please. Could you tell me what I need to do?\nAssistant: Of course. But before we start, could I take a few details? So, your name …\nWoman: It's Marta Nowak.\nAssistant: Thank you. And the address?\nWoman: Fourteen Bell Street, Flat Three.\nAssistant: Our records still show Fourteen Bell Street. Is that your current address?\nWoman: That's right, I've moved. It's Twelve Bell Street now.\nAssistant: I'll correct that. Twelve Bell Street it is. Could you confirm the postcode?\nWoman: It's E nine, zero A B.\nAssistant: E nine, zero A B. Thank you. Now, membership costs eleven pounds fifty a year for adults. Oh, wait, I'm looking at the student rate. For an adult it's twenty-four pounds ninety-five.\nWoman: Twenty-four ninety-five, fine.\nAssistant: And your membership will start on the third of March.\nWoman: I was told it could start next week, on the twenty-fourth of February?\nAssistant: Sorry, no. You only need to wait for the new card, which is issued on the third of March. Before that, a guest card lets you borrow books, but not at the weekend. The library opens at nine on weekdays, though … and nine thirty on Saturdays.\nWoman: I see. How many items can I take out?\nAssistant: Ten books at a time, and we have a family rate as well. What interests you most?\nWoman: Mainly local history. And I'd like to use the computers.\nAssistant: You're in luck. We run a free talk for new members on the second Thursday of every month, at six forty-five, in the reading room. As for the computers, the website lists all of them, so I'm sure you'll find that useful.\nWoman: Great. What do I need to bring?\nAssistant: Just one form of photo identification. It used to be two, but we've changed the rule. Is there anything else?\nWoman: I don't think so. Thank you very much.",
+    "questions": [
+      {
+        "id": 1,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "Name: Marta Nowak\nAddress: 12 _____ Street, Flat 3",
+        "choices": [],
+        "answers": [
+          "Bell"
+        ],
+        "wordLimit": 2,
+        "explanation": "助手把地址从 'Twelve' 改为 'Twelve Bell Street it is'，女士确认 'It's Twelve Bell Street now.'，门牌号为 Bell。",
+        "evidence": "I'll correct that. Twelve Bell Street it is."
+      },
+      {
+        "id": 2,
+        "type": "completion",
+        "instruction": "Write NO MORE THAN THREE LETTERS AND/OR NUMBERS.",
+        "prompt": "Postcode: E9 _____",
+        "choices": [],
+        "answers": [
+          "0AB",
+          "0 AB",
+          "0 A B"
+        ],
+        "wordLimit": 0,
+        "explanation": "听到的邮编为 E9 0AB，题面已经给出 E9，应填写 0AB。",
+        "evidence": "Woman: It's E nine, zero A B."
+      },
+      {
+        "id": 3,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "Adult membership fee: £_____ a year",
+        "choices": [],
+        "answers": [
+          "24.95"
+        ],
+        "wordLimit": 2,
+        "explanation": "助手先误报学生价 'eleven pounds fifty'，随即更正 'For an adult it's twenty-four pounds ninety-five.'，即 £24.95。",
+        "evidence": "Oh, wait, I'm looking at the student rate. For an adult it's twenty-four pounds ninety-five."
+      },
+      {
+        "id": 4,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "Membership card ready: _____ March",
+        "choices": [],
+        "answers": [
+          "3rd",
+          "3",
+          "third"
+        ],
+        "wordLimit": 2,
+        "explanation": "助手先建议卡在 'the third of March' 发出，女士提出 'the twenty-fourth of February'，助手用 'Sorry, no.' 否定，坚持 'issued on the third of March'，故填3月3日。",
+        "evidence": "Sorry, no. You only need to wait for the new card, which is issued on the third of March."
+      },
+      {
+        "id": 5,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "Weekday opening time: _____ am",
+        "choices": [],
+        "answers": [
+          "9",
+          "nine"
+        ],
+        "wordLimit": 1,
+        "explanation": "工作日九点开门；九点半是周六的开放时间。",
+        "evidence": "The library opens at nine on weekdays, though … and nine thirty on Saturdays."
+      },
+      {
+        "id": 6,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "Maximum number of books a member can borrow at one time: _____",
+        "choices": [],
+        "answers": [
+          "10",
+          "ten"
+        ],
+        "wordLimit": 1,
+        "explanation": "馆员明确说明每次最多借 ten books，即十本。",
+        "evidence": "Ten books at a time, and we have a family rate as well."
+      },
+      {
+        "id": 7,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "New members' talk: second Thursday of each month\nTime: _____ pm",
+        "choices": [],
+        "answers": [
+          "6.45",
+          "6:45"
+        ],
+        "wordLimit": 2,
+        "explanation": "助手说讲座在 'six forty-five'，即下午6:45，题干已含 pm，填 '6.45'。",
+        "evidence": "We run a free talk for new members on the second Thursday of every month, at six forty-five, in the reading room."
+      },
+      {
+        "id": 8,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B or C.",
+        "prompt": "What can a new member do with a guest card before the membership card arrives?",
+        "choices": [
+          "Borrow books on weekdays only.",
+          "Borrow books at any time.",
+          "Use the reading room without borrowing."
+        ],
+        "answers": [
+          "Borrow books on weekdays only."
+        ],
+        "wordLimit": 0,
+        "explanation": "助手说 'a guest card lets you borrow books, but not at the weekend'，即平日可借、周末不可借；B含周末，错误；C与原文不符。故选A。",
+        "evidence": "Before that, a guest card lets you borrow books, but not at the weekend."
+      },
+      {
+        "id": 9,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B or C.",
+        "prompt": "What does the assistant say about the computers?",
+        "choices": [
+          "None of them are currently free to use.",
+          "A list of them can be found on the website.",
+          "Members must book them one week ahead."
+        ],
+        "answers": [
+          "A list of them can be found on the website."
+        ],
+        "wordLimit": 0,
+        "explanation": "助手说 'the website lists all of them'，即网站列出所有电脑；未提是否已满、也未提提前一周预订。故选B。",
+        "evidence": "As for the computers, the website lists all of them, so I'm sure you'll find that useful."
+      },
+      {
+        "id": 10,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B or C.",
+        "prompt": "What must the woman bring in order to join?",
+        "choices": [
+          "One photo identification document.",
+          "Two photo identification documents.",
+          "A letter with her address on it."
+        ],
+        "answers": [
+          "One photo identification document."
+        ],
+        "wordLimit": 0,
+        "explanation": "助手说 'Just one form of photo identification. It used to be two, but we've changed the rule.'，规则已改为一份，故A；B为旧规定。",
+        "evidence": "Just one form of photo identification. It used to be two, but we've changed the rule."
+      }
+    ],
+    "source": "LexiFlow 原创专项练习",
+    "version": 2,
+    "speech": "Good morning. I'd like to join the library, please. Could you tell me what I need to do?\nOf course. But before we start, could I take a few details? So, your name …\nIt's Marta Nowak.\nThank you. And the address?\nFourteen Bell Street, Flat Three.\nOur records still show Fourteen Bell Street. Is that your current address?\nThat's right, I've moved. It's Twelve Bell Street now.\nI'll correct that. Twelve Bell Street it is. Could you confirm the postcode?\nIt's E nine, zero A B.\nE nine, zero A B. Thank you. Now, membership costs eleven pounds fifty a year for adults. Oh, wait, I'm looking at the student rate. For an adult it's twenty-four pounds ninety-five.\nTwenty-four ninety-five, fine.\nAnd your membership will start on the third of March.\nI was told it could start next week, on the twenty-fourth of February?\nSorry, no. You only need to wait for the new card, which is issued on the third of March. Before that, a guest card lets you borrow books, but not at the weekend. The library opens at nine on weekdays, though … and nine thirty on Saturdays.\nI see. How many items can I take out?\nTen books at a time, and we have a family rate as well. What interests you most?\nMainly local history. And I'd like to use the computers.\nYou're in luck. We run a free talk for new members on the second Thursday of every month, at six forty-five, in the reading room. As for the computers, the website lists all of them, so I'm sure you'll find that useful.\nGreat. What do I need to bring?\nJust one form of photo identification. It used to be two, but we've changed the rule. Is there anything else?\nI don't think so. Thank you very much."
+  },
+  {
+    "id": "original-listening-field-trip",
+    "title": "野外考察行前说明",
+    "skill": "listening",
+    "instructions": "Questions 31–40. You will hear a teacher giving a talk to students about an upcoming field trip. Listen and answer the questions.",
+    "passage": "",
+    "script": "Teacher: Good afternoon, everyone. Thank you for coming. This is the briefing for next month's field trip to the coastal wetland. A few details have changed since my last email, so please listen carefully. We're going to the north hide instead of the east hide, because the east hide is still closed for repairs. We will now meet at half past seven in the main car park, not half past eight. That's been changed because the bus company needs the vehicle back earlier, and the journey takes an hour and a half.\n\nThe cost of the trip has also changed. The first letter said eleven pounds seventy, but after checking the coach price again, the final cost is twelve pounds forty per student. You should pay by Friday the fourteenth of March, not the twenty-first as the email said. If you have already paid the old amount, the school office will sort it out with you.\n\nNow, what you need to bring. A packed lunch, and you will need waterproof boots, as the paths may be muddy. Gloves are no longer required; we've decided it's warm enough at this time of year. If you have any questions about the trip, call the science department on double oh seven, five five nine, one three four eight. Please don't call the school reception, as they don't have the details.\n\nThe wetland centre has asked us to follow some rules. You can walk along the boardwalk without a guide, but please stay on it, as the mud around it is unsafe. We will record our bird counts with the centre's own sheets, and they will forward the results to the website later.\n\nFinally, our return time. It was going to be four forty in the afternoon, but I've now been told the bus will leave the centre at four fifteen instead. Thank you, and I'll see you all at the meeting point.",
+    "questions": [
+      {
+        "id": 1,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "Destination: north _____ (instead of the east hide)",
+        "choices": [],
+        "answers": [
+          "hide"
+        ],
+        "wordLimit": 2,
+        "explanation": "老师说 'We're going to the north hide instead of the east hide'，因此目的地是 north hide，填 'hide'。",
+        "evidence": "We're going to the north hide instead of the east hide, because the east hide is still closed for repairs."
+      },
+      {
+        "id": 2,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "Meeting place: main _____",
+        "choices": [],
+        "answers": [
+          "car park"
+        ],
+        "wordLimit": 2,
+        "explanation": "老师提到 'We will now meet at half past seven in the main car park'，集合地点为 main car park。",
+        "evidence": "We will now meet at half past seven in the main car park, not half past eight."
+      },
+      {
+        "id": 3,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "New meeting time: _____ am (not 8.30)",
+        "choices": [],
+        "answers": [
+          "7.30",
+          "7:30",
+          "seven thirty"
+        ],
+        "wordLimit": 2,
+        "explanation": "老师先提旧时间 'half past eight'，随后更正为 'half past seven'，即上午7:30。",
+        "evidence": "We will now meet at half past seven in the main car park, not half past eight."
+      },
+      {
+        "id": 4,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "Final price per student: £_____",
+        "choices": [],
+        "answers": [
+          "12.40"
+        ],
+        "wordLimit": 1,
+        "explanation": "价格先报作 'eleven pounds seventy'（旧信金额），最终更正为 'the final cost is twelve pounds forty per student'，即 £12.40。",
+        "evidence": "The first letter said eleven pounds seventy, but after checking the coach price again, the final cost is twelve pounds forty per student."
+      },
+      {
+        "id": 5,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "Payment deadline: Friday _____ March",
+        "choices": [],
+        "answers": [
+          "14th",
+          "14",
+          "fourteenth"
+        ],
+        "wordLimit": 2,
+        "explanation": "老师先提邮件日期 'the twenty-first'，随即更正 'You should pay by Friday the fourteenth of March'，即3月14日。",
+        "evidence": "You should pay by Friday the fourteenth of March, not the twenty-first as the email said."
+      },
+      {
+        "id": 6,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "To bring: packed lunch and waterproof _____",
+        "choices": [],
+        "answers": [
+          "boots"
+        ],
+        "wordLimit": 2,
+        "explanation": "老师列出 'A packed lunch, and you will need waterproof boots'，手套已不需要，因此需带防水靴。",
+        "evidence": "A packed lunch, and you will need waterproof boots, as the paths may be muddy."
+      },
+      {
+        "id": 7,
+        "type": "completion",
+        "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer, using digits where a number is needed.",
+        "prompt": "Science department phone: _____",
+        "choices": [],
+        "answers": [
+          "0075591348",
+          "007 5591348"
+        ],
+        "wordLimit": 2,
+        "explanation": "老师读号码 'double oh seven, five five nine, one three four eight'，即 007 559 1348；并强调勿打学校前台。",
+        "evidence": "If you have any questions about the trip, call the science department on double oh seven, five five nine, one three four eight."
+      },
+      {
+        "id": 8,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B or C.",
+        "prompt": "What does the teacher say about the boardwalk?",
+        "choices": [
+          "Students must be led along it by a guide.",
+          "Students can use it freely but must keep to it.",
+          "Students may not use it at all because it is unsafe."
+        ],
+        "answers": [
+          "Students can use it freely but must keep to it."
+        ],
+        "wordLimit": 0,
+        "explanation": "原文 'You can walk along the boardwalk without a guide, but please stay on it'，即无需向导、但必须留在栈道上；危险的是栈道周围的泥地，而非栈道本身，故A、C错误。",
+        "evidence": "You can walk along the boardwalk without a guide, but please stay on it, as the mud around it is unsafe."
+      },
+      {
+        "id": 9,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B or C.",
+        "prompt": "Why has the meeting time been made earlier?",
+        "choices": [
+          "The wetland centre will open earlier on that day.",
+          "The students need more time for bird counting.",
+          "The bus must be returned to its owner sooner."
+        ],
+        "answers": [
+          "The bus must be returned to its owner sooner."
+        ],
+        "wordLimit": 0,
+        "explanation": "原文 'the bus company needs the vehicle back earlier'，即租车公司需要大巴更早归还，故选C；其余两项原文未提。",
+        "evidence": "That's been changed because the bus company needs the vehicle back earlier, and the journey takes an hour and a half."
+      },
+      {
+        "id": 10,
+        "type": "choice",
+        "instruction": "Choose the correct letter, A, B or C.",
+        "prompt": "What has changed about the return time?",
+        "choices": [
+          "The bus will leave the centre at 4.15.",
+          "The students will get back at 4.40.",
+          "The trip will finish at the meeting point at 4.15."
+        ],
+        "answers": [
+          "The bus will leave the centre at 4.15."
+        ],
+        "wordLimit": 0,
+        "explanation": "原文 'It was going to be four forty in the afternoon, but I've now been told the bus will leave the centre at four fifteen instead'，出发时间改为4:15，4:40为旧安排，故C项'在集合点结束'无据。",
+        "evidence": "It was going to be four forty in the afternoon, but I've now been told the bus will leave the centre at four fifteen instead."
+      }
+    ],
+    "source": "LexiFlow 原创专项练习",
+    "version": 2,
+    "speech": "Good afternoon, everyone. Thank you for coming. This is the briefing for next month's field trip to the coastal wetland. A few details have changed since my last email, so please listen carefully. We're going to the north hide instead of the east hide, because the east hide is still closed for repairs. We will now meet at half past seven in the main car park, not half past eight. That's been changed because the bus company needs the vehicle back earlier, and the journey takes an hour and a half.\n\nThe cost of the trip has also changed. The first letter said eleven pounds seventy, but after checking the coach price again, the final cost is twelve pounds forty per student. You should pay by Friday the fourteenth of March, not the twenty-first as the email said. If you have already paid the old amount, the school office will sort it out with you.\n\nNow, what you need to bring. A packed lunch, and you will need waterproof boots, as the paths may be muddy. Gloves are no longer required; we've decided it's warm enough at this time of year. If you have any questions about the trip, call the science department on double oh seven, five five nine, one three four eight. Please don't call the school reception, as they don't have the details.\n\nThe wetland centre has asked us to follow some rules. You can walk along the boardwalk without a guide, but please stay on it, as the mud around it is unsafe. We will record our bird counts with the centre's own sheets, and they will forward the results to the website later.\n\nFinally, our return time. It was going to be four forty in the afternoon, but I've now been told the bus will leave the centre at four fifteen instead. Thank you, and I'll see you all at the meeting point."
+  }
+]

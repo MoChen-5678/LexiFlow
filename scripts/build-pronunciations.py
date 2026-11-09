@@ -9,16 +9,20 @@ import wave
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-assets, output = map(Path, sys.argv[1:])
+assets, output = map(Path, sys.argv[1:3])
+sets_only = "--sets-only" in sys.argv[3:]
 texts = set()
-for path in sorted((assets / "dicts").glob("*.json")):
+for path in ([] if sets_only else sorted((assets / "dicts").glob("*.json"))):
     if path.name == "vocabulary-stats.json":
         continue
     for row in json.loads(path.read_text(encoding="utf8")):
         texts.add(row["word"].strip().lower())
-for row in json.loads((assets / "exam_questions.json").read_text(encoding="utf8")):
+for row in ([] if sets_only else json.loads((assets / "exam_questions.json").read_text(encoding="utf8"))):
     if row.get("speech"):
         texts.add(row["speech"].strip().lower())
+
+for test in json.loads((assets / "ielts_sets.json").read_text(encoding="utf8")):
+    texts.add(" ".join(test["speech"].strip().lower().split()))
 
 lame = c.CDLL(find_library("mp3lame"))
 handle = c.c_void_p
@@ -60,7 +64,9 @@ def encode(text, voice):
 
 output.mkdir(parents=True, exist_ok=True)
 words = sorted(texts - {""})
-for accent, voice in [("US", "en-us"), ("UK", "en-gb")]:
+for accent, voice in [("US", "en-us"), ("UK", "en"), ("US-female", "en-us+f3"), ("UK-female", "en+f3")]:
+    if "--uk-only" in sys.argv[3:] and not accent.startswith("UK"):
+        continue
     index = {}
     pack = output / f"{accent}.lfpack"
     temp = pack.with_suffix(".tmp")

@@ -98,7 +98,8 @@ def daily_questions(bank, dictionaries, day):
                 count += 1
                 if count == 8:
                     break
-        rows.extend(scenario_questions(exam, rng))
+        if exam != "ielts":
+            rows.extend(scenario_questions(exam, rng))
     bank.save(rows, day, daily=True)
 
 

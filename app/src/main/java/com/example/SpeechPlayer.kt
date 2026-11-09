@@ -6,156 +6,130 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import android.widget.Toast
+import org.json.JSONObject
 import java.util.Locale
 
+/** English recordings and an explicitly English synthesizer share the same voice selection. */
 internal class SpeechPlayer(private val context: Context) {
     private val main = Handler(Looper.getMainLooper())
     private val attributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
-    private data class Request(val id: String, val text: String, val accent: String, val speed: Float)
-    private val indices = mutableMapOf<String, org.json.JSONObject>()
-    private var generation = 0L
-    private var current: Request? = null
+    private val indices = mutableMapOf<String, JSONObject>()
+    private var generation = 0
     private var player: MediaPlayer? = null
-    private var ready: Boolean? = null
     private var closed = false
-    private val engine = TextToSpeech(context.applicationContext) { status ->
-        main.post { initialized(status == TextToSpeech.SUCCESS) }
-    }
 
-    private fun initialized(ok: Boolean) {
+    fun play(text: String, accent: String, speed: Float, gender: String = "female") {
         if (closed) return
-        ready = ok
-        if (ok) {
-            engine.setAudioAttributes(attributes)
-            engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(id: String) = main.postFor(id) { main.removeCallbacks(watchdog) }
-                override fun onDone(id: String) = main.postFor(id) { finish() }
-                @Deprecated("Android TTS callback")
-                override fun onError(id: String) = main.postFor(id) { fallback() }
-            })
-        }
-        current?.let { if (player == null) start(it) }
-    }
-
-    private fun Handler.postFor(id: String, action: () -> Unit) {
-        post { if (current?.id == id && player == null) action() }
-    }
-
-    private val watchdog = Runnable { fallback() }
-    private val networkTimeout = Runnable { failed() }
-
-    fun play(text: String, accent: String, speed: Float) {
-        if (text.isBlank() || closed) return
         stop()
-        val request = Request((++generation).toString(), text, accent, speed.coerceIn(0.5f, 2f))
-        current = request
-        if (!playPack(request)) start(request)
-    }
-
-    private fun playPack(request: Request): Boolean {
-        val accent = if (request.accent == "UK") "UK" else "US"
-        return try {
-            val index = indices.getOrPut(accent) {
-                context.assets.open("audio/$accent.json").bufferedReader().use { org.json.JSONObject(it.readText()) }
+        val english = englishSpeech(text)
+        if (english.isBlank()) return
+        val request = generation
+        val pack = if (gender == "female") "$accent-female" else accent
+        val rate = speed.coerceIn(0.5f, 2f)
+        if (playLocal(english, pack, rate, request) {}) return
+        val chunks = speechChunks(english)
+        fun next(index: Int) {
+            if (generation != request || closed || index >= chunks.size) return
+            val chunk = chunks[index]
+            if (!playLocal(chunk, pack, rate, request) { next(index + 1) }) {
+                val url = Uri.parse(BuildConfig.API_BASE + "/api/audio").buildUpon()
+                    .appendQueryParameter("text", chunk).appendQueryParameter("accent", accent)
+                    .appendQueryParameter("gender", gender).appendQueryParameter("speed", rate.toString()).build().toString()
+                playMedia(request, onDone = { next(index + 1) }, onFailure = ::failed) { setDataSource(url) }
             }
-            val range = index.optJSONArray(request.text.trim().lowercase(Locale.ROOT)) ?: return false
-            val local = MediaPlayer()
-            player = local
-            local.setAudioAttributes(attributes)
-            context.assets.openFd("audio/$accent.lfpack").use { fd ->
-                local.setDataSource(fd.fileDescriptor, fd.startOffset + range.getLong(0), range.getLong(1))
-            }
-            fun retry() {
-                if (player != local) return
-                local.release()
-                player = null
-                start(request)
-            }
-            local.setOnPreparedListener { mp ->
-                if (player == mp) {
-                    runCatching {
-                        mp.playbackParams = mp.playbackParams.setSpeed(request.speed)
-                        mp.start()
-                    }.onFailure { retry() }
-                }
-            }
-            local.setOnCompletionListener { if (player == it) finish() }
-            local.setOnErrorListener { _, _, _ -> retry(); true }
-            local.prepareAsync()
-            true
-        } catch (_: Exception) {
-            player?.release()
-            player = null
-            false
         }
+        next(0)
     }
 
-    private fun start(request: Request) {
-        main.removeCallbacks(watchdog)
-        main.postDelayed(watchdog, 4000)
-        if (ready == null) return
-        val locale = if (request.accent == "UK") Locale.UK else Locale.US
-        if (ready == true && engine.setLanguage(locale) >= TextToSpeech.LANG_AVAILABLE) {
-            engine.setSpeechRate(request.speed)
-            if (engine.speak(request.text, TextToSpeech.QUEUE_FLUSH, null, request.id) == TextToSpeech.SUCCESS) return
+    private fun playLocal(text: String, pack: String, rate: Float, request: Int, done: () -> Unit): Boolean {
+        val range = try {
+            indices.getOrPut(pack) {
+                context.assets.open("audio/$pack.json").bufferedReader().use { JSONObject(it.readText()) }
+            }.optJSONArray(text.trim().lowercase(Locale.ROOT))
+        } catch (_: Exception) { null } ?: return false
+        playMedia(request, rate, done, ::failed) {
+            context.assets.openFd("audio/$pack.lfpack").use {
+                setDataSource(it.fileDescriptor, it.startOffset + range.getLong(0), range.getLong(1))
+            }
         }
-        fallback()
+        return true
     }
 
-    private fun fallback() {
-        val request = current ?: return
-        if (player != null) return
-        main.removeCallbacks(watchdog)
-        val url = Uri.parse(BuildConfig.API_BASE + "/api/audio").buildUpon()
-            .appendQueryParameter("text", request.text)
-            .appendQueryParameter("accent", request.accent)
-            .appendQueryParameter("speed", request.speed.toString()).build().toString()
+    private fun playMedia(
+        request: Int, rate: Float = 1f, onDone: () -> Unit, onFailure: () -> Unit,
+        source: MediaPlayer.() -> Unit
+    ) {
+        if (generation != request || closed) return
+        player?.release()
+        val mp = MediaPlayer()
+        player = mp
+        val timeout = Runnable { if (generation == request && player == mp) onFailure() }
         try {
-            val remote = MediaPlayer()
-            player = remote
-            engine.stop()
-            remote.setAudioAttributes(attributes)
-            remote.setOnPreparedListener {
-                if (player == it) {
-                    main.removeCallbacks(networkTimeout)
-                    runCatching { it.start() }.onFailure { failed() }
+            mp.setAudioAttributes(attributes)
+            mp.setOnPreparedListener {
+                if (generation == request && player == it) {
+                    main.removeCallbacks(timeout)
+                    runCatching {
+                        if (rate != 1f) it.playbackParams = it.playbackParams.setSpeed(rate)
+                        it.start()
+                    }.onFailure { onFailure() }
                 }
             }
-            remote.setOnCompletionListener { if (player == it) finish() }
-            remote.setOnErrorListener { mp, _, _ -> if (player == mp) failed(); true }
-            main.postDelayed(networkTimeout, 15000)
-            remote.setDataSource(url)
-            remote.prepareAsync()
+            mp.setOnCompletionListener {
+                if (generation == request && player == it) {
+                    it.release()
+                    player = null
+                    onDone()
+                }
+            }
+            mp.setOnErrorListener { failed, _, _ ->
+                main.removeCallbacks(timeout)
+                if (generation == request && player == failed) onFailure()
+                true
+            }
+            mp.source()
+            mp.prepareAsync()
+            main.postDelayed(timeout, 20000)
         } catch (_: Exception) {
-            failed()
+            main.removeCallbacks(timeout)
+            if (generation == request) onFailure()
         }
     }
 
-    private fun finish() {
-        current = null
-        main.removeCallbacks(watchdog)
-        main.removeCallbacks(networkTimeout)
+    private fun failed() {
+        stop()
+        Toast.makeText(context, "朗读未能播放，请检查网络或稍后重试。", Toast.LENGTH_LONG).show()
+    }
+
+    fun stop() {
+        generation++
+        main.removeCallbacksAndMessages(null)
         player?.release()
         player = null
     }
 
-    private fun failed() {
-        finish()
-        Toast.makeText(context, "朗读失败。请检查网络，或在系统语音设置中安装英语语音后重试。", Toast.LENGTH_LONG).show()
-    }
-
-    fun stop() {
-        finish()
-        if (ready == true) engine.stop()
-    }
-
     fun close() {
-        closed = true
         stop()
-        engine.shutdown()
+        closed = true
     }
+}
+
+internal fun englishSpeech(text: String): String = text.lineSequence()
+    .filterNot { line -> line.any { Character.UnicodeScript.of(it.code) == Character.UnicodeScript.HAN } }
+    .joinToString(" ").replace(Regex("\\s+"), " ").trim()
+
+internal fun speechChunks(text: String): List<String> {
+    val chunks = mutableListOf<String>()
+    var current = ""
+    for (word in text.split(Regex("\\s+"))) {
+        if (current.length + word.length + 1 > 650) {
+            if (current.isNotBlank()) chunks += current
+            current = ""
+        }
+        current += if (current.isEmpty()) word else " $word"
+    }
+    if (current.isNotBlank()) chunks += current
+    return chunks
 }

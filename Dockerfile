@@ -5,6 +5,7 @@ RUN sed -i 's|http://deb.debian.org|https://repo.huaweicloud.com|g' /etc/apt/sou
 WORKDIR /app
 COPY server /app
 COPY app/src/main/assets/exam_questions.json /app/questions.json
+COPY app/src/main/assets/ielts_sets.json /app/ielts_sets.json
 COPY app/src/main/assets/dicts/cet4.json app/src/main/assets/dicts/cet6.json app/src/main/assets/dicts/ielts.json /app/dicts/
 RUN install -d -o 10001 -g 10001 /data
 USER 10001:10001

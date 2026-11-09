@@ -30,13 +30,15 @@ class BankTest(unittest.TestCase):
             bank = Bank(Path(folder) / "questions.db")
             daily_questions(bank, ASSETS / "dicts", "2026-01-01")
             initial = bank.existing()
-            self.assertEqual(len(initial), 57)
+            self.assertEqual(len(initial), 54)
             daily_questions(bank, ASSETS / "dicts", "2026-01-01")
             self.assertEqual(initial, bank.existing())
             daily_questions(bank, ASSETS / "dicts", "2026-01-02")
             self.assertTrue(initial < bank.existing())
             for exam in EXAMS:
                 for kind in KINDS:
+                    if exam == "ielts" and kind in ("reading", "listening", "cloze"):
+                        continue
                     questions = bank.batch(exam, kind, 30)
                     self.assertTrue(questions)
                     for item in questions:

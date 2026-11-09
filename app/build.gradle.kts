@@ -13,8 +13,8 @@ android {
     applicationId = "com.aistudio.lexiflow.vocab"
     minSdk = 24
     targetSdk = 36
-    versionCode = 2
-    versionName = "1.1"
+    versionCode = 3
+    versionName = "1.2"
     val apiHost = providers.gradleProperty("lexiflowHost").getOrElse("47.109.146.2")
     require(apiHost in setOf("47.109.146.2", "10.0.2.2", "127.0.0.1"))
     buildConfigField("String", "API_BASE", "\"http://$apiHost:5000\"")

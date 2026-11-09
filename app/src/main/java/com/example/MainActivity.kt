@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
                 // TTS trigger collector
                 LaunchedEffect(viewModel.speakEvent) {
                     viewModel.speakEvent.collect { word ->
-                        speech.play(word, viewModel.pronunciationAccent.value, viewModel.pronunciationSpeed.value)
+                        speech.play(word, viewModel.pronunciationAccent.value, viewModel.pronunciationSpeed.value, viewModel.pronunciationGender.value)
                     }
                 }
 
@@ -127,7 +127,7 @@ fun MainScreen(viewModel: QwertyViewModel) {
             .focusRequester(focusRequester)
             .focusable()
             .onKeyEvent { keyEvent ->
-                if (screenState == ScreenState.TYPING_ARENA && viewModel.activeMode.value in listOf(GameMode.TYPING, GameMode.DICTATION) && keyEvent.type == KeyEventType.KeyDown) {
+                if (screenState == ScreenState.TYPING_ARENA && viewModel.activeMode.value == GameMode.DICTATION && keyEvent.type == KeyEventType.KeyDown) {
                     val codePoint = keyEvent.utf16CodePoint
                     if (codePoint > 0) {
                         val char = codePoint.toChar()
@@ -619,10 +619,10 @@ fun DashboardScreen(viewModel: QwertyViewModel) {
 
         item {
             val modes = listOf(
-                Triple(GameMode.TYPING, "⌨ 键盘盲打拼写", "逐字母输入拼写，建立极速肌肉反射记忆。"),
+                Triple(GameMode.TYPING, "例句填空", "根据英文例句和中文释义，填写缺少的单词。"),
                 Triple(GameMode.CHOICE, "📝 四选一英汉测试", "快速反应中英文释义，考核语义熟练度。"),
                 Triple(GameMode.CLOZE, "📖 语境例句挖空", "根据英文语境遮盖，填入拼写最契合的词汇。"),
-                Triple(GameMode.DICTATION, "🔊 真人原声听写", "只听发音不看字幕拼写，打通听觉记忆链路。"),
+                Triple(GameMode.DICTATION, "听音拼写", "只听发音不看字幕拼写，打通听觉记忆链路。"),
                 Triple(GameMode.MATCHING, "⭐ 趣味连线连连看", "连线连连看：在 4x4 中迅速配对英语和中文。")
             )
 
@@ -680,15 +680,15 @@ fun PracticePreviewScreen(viewModel: QwertyViewModel) {
     var wordLimit by remember { mutableStateOf(20) }
 
     val modeTitle = when (mode) {
-        GameMode.TYPING -> "⌨ 键盘盲打拼写"
+        GameMode.TYPING -> "例句填空"
         GameMode.CHOICE -> "📝 四选一英汉测试"
         GameMode.CLOZE -> "📖 语境例句挖空"
-        GameMode.DICTATION -> "🔊 真人原声听写"
+        GameMode.DICTATION -> "听音拼写"
         GameMode.MATCHING -> "⭐ 趣味连线连连看"
     }
 
     val modeDesc = when (mode) {
-        GameMode.TYPING -> "在虚拟全键盘上敲击拼写，快速形成肌肉记忆。"
+        GameMode.TYPING -> "阅读挖空例句，根据下方中文释义填写单词。例句练习使用已配有效例句的词汇。"
         GameMode.CHOICE -> "考核中英文互译，挑战你的英汉反射速度。"
         GameMode.CLOZE -> "将目标词形变填入英文例句的空格中，建立语境锚点。"
         GameMode.DICTATION -> "专为听力强化设计，纯发音拼写，不带视觉干扰。"
@@ -771,6 +771,11 @@ fun PracticePreviewScreen(viewModel: QwertyViewModel) {
 
 @Composable
 fun TypingArenaScreen(viewModel: QwertyViewModel) {
+    val mode by viewModel.activeMode.collectAsState()
+    if (mode == GameMode.TYPING || mode == GameMode.CLOZE) {
+        SentencePracticeScreen(viewModel)
+        return
+    }
     val state by viewModel.typingState.collectAsState()
     val activeMode by viewModel.activeMode.collectAsState()
     val showPhoneticBefore by viewModel.showPhoneticBeforeAnswer.collectAsState()
@@ -1939,6 +1944,7 @@ fun SettingsScreen(viewModel: QwertyViewModel) {
     val autoPlay by viewModel.autoPlaySpeech.collectAsState()
     val accent by viewModel.pronunciationAccent.collectAsState()
     val speed by viewModel.pronunciationSpeed.collectAsState()
+    val gender by viewModel.pronunciationGender.collectAsState()
 
     var backupText by remember { mutableStateOf("") }
     var importText by remember { mutableStateOf("") }
@@ -2005,7 +2011,7 @@ fun SettingsScreen(viewModel: QwertyViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("单词自动原声播放")
+                        Text("自动播放单词发音")
                         Switch(
                             checked = autoPlay,
                             onCheckedChange = {
@@ -2038,6 +2044,16 @@ fun SettingsScreen(viewModel: QwertyViewModel) {
                         }
                     }
 
+                    Text("朗读声音")
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        listOf("female" to "女声", "male" to "男声").forEach { (value, title) ->
+                            FilterChip(selected = gender == value, onClick = { viewModel.selectPronunciationGender(value) },
+                                label = { Text(title) })
+                        }
+                        TextButton(onClick = { viewModel.speakWord("ability") }) {
+                            Text("试听")
+                        }
+                    }
                     Column {
                         Text("发音播放速度: ${String.format("%.1f", speed)}x")
                         Slider(

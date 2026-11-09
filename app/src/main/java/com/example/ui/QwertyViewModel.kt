@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.data.*
+import com.example.sentenceContains
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -104,6 +105,13 @@ class QwertyViewModel(
     val isDarkTheme = MutableStateFlow(prefs.getBoolean("is_dark_theme", false))
     val autoPlaySpeech = MutableStateFlow(prefs.getBoolean("auto_play_speech", true))
     val pronunciationAccent = MutableStateFlow(prefs.getString("pronunciation_accent", "US") ?: "US") // US or UK
+    val pronunciationGender = MutableStateFlow(prefs.getString("pronunciation_gender", "female") ?: "female")
+    fun selectPronunciationGender(value: String) {
+        if (value !in listOf("female", "male")) return
+        pronunciationGender.value = value
+        prefs.edit().putString("pronunciation_gender", value).apply()
+    }
+
     val pronunciationSpeed = MutableStateFlow(prefs.getFloat("pronunciation_speed", 1.0f))
 
     // Onboarding status
@@ -117,47 +125,34 @@ class QwertyViewModel(
     val allSessions: StateFlow<List<TypingSession>> = repository.allSessions
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Enriches a word structure dynamically to avoid empty strings
-    private fun enrichWordWithProgress(item: WordWithProgress): WordWithProgress {
-        val word = item.word
-        if (word.exampleSentence.isNotEmpty()) return item
+    private val sentenceExamples = MutableStateFlow<Map<String, Pair<String, String>>>(emptyMap())
 
-        val defaultMatch = DefaultWords.list.find { it.word.equals(word.word, ignoreCase = true) }
-        val enrichedWord = if (defaultMatch != null && defaultMatch.exampleSentence.isNotEmpty()) {
-            word.copy(
-                exampleSentence = defaultMatch.exampleSentence,
-                exampleTranslation = defaultMatch.exampleTranslation,
-                exampleSentence2 = defaultMatch.exampleSentence2,
-                exampleTranslation2 = defaultMatch.exampleTranslation2,
-                exampleSentence3 = defaultMatch.exampleSentence3,
-                exampleTranslation3 = defaultMatch.exampleTranslation3
-            )
-        } else {
-            val templates = listOf(
-                Pair("We need to understand the concept of [word] thoroughly.", "我们需要彻底理解 [word] 的概念。"),
-                Pair("Can you help me translate the word [word] into Chinese?", "你能帮我把 [word] 这个单词翻译成中文吗？"),
-                Pair("He made a beautiful sentence with [word] during the English class.", "他在英语课上用 [word] 造了一个漂亮的句子。"),
-                Pair("Learning the term [word] is helpful for your academic study.", "学习 [word] 这个术语对你的学术研究很有帮助。"),
-                Pair("Please write down the word [word] on your notebook.", "请在你的笔记本上写下 [word] 这个单词。"),
-                Pair("The professor discussed the definition of [word] yesterday.", "教授昨天讨论了 [word] 的定义。"),
-                Pair("She managed to remember the spelling of [word] easily.", "她很轻松地记住了 [word] 的拼写。"),
-                Pair("This article explains how to use [word] in daily conversation.", "这篇文章解释了如何在日常对话中使用 [word] 这个词。")
-            )
-            val index = Math.floorMod(word.word.hashCode(), templates.size)
-            val selectedTemplate = templates[index]
-            val sentence = selectedTemplate.first.replace("[word]", word.word)
-            val translation = selectedTemplate.second.replace("[word]", word.word)
-            word.copy(
-                exampleSentence = sentence,
-                exampleTranslation = translation
-            )
+    private suspend fun loadSentenceExamples() {
+        if (sentenceExamples.value.isNotEmpty()) return
+        sentenceExamples.value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val data = getApplication<Application>().assets.open("word_examples.json").bufferedReader()
+                .use { JSONObject(it.readText()) }
+            data.keys().asSequence().associateWith { key ->
+                val value = data.getJSONObject(key)
+                value.getString("sentence") to value.getString("translation")
+            }
         }
-        return item.copy(word = enrichedWord)
     }
 
-    val allWordsWithProgress: StateFlow<List<WordWithProgress>> = repository.allWordsWithProgress
-        .map { list -> list.map { enrichWordWithProgress(it) } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private fun enrichWordWithProgress(item: WordWithProgress): WordWithProgress {
+        val word = item.word
+        val example = sentenceExamples.value[word.word.lowercase(Locale.ROOT)]
+        if (example != null) return item.copy(word = word.copy(
+            exampleSentence = example.first, exampleTranslation = example.second))
+        val bundled = DefaultWords.list.find { it.word.equals(word.word, ignoreCase = true) }
+        return item.copy(word = word.copy(
+            exampleSentence = bundled?.exampleSentence ?: "",
+            exampleTranslation = bundled?.exampleTranslation ?: ""))
+    }
+
+    val allWordsWithProgress: StateFlow<List<WordWithProgress>> = combine(repository.allWordsWithProgress, sentenceExamples) { list, _ ->
+        list.map { enrichWordWithProgress(it) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Filtered lists for Word Explorer Screen
     val searchQuery = MutableStateFlow("")
@@ -236,6 +231,7 @@ class QwertyViewModel(
 
     init {
         viewModelScope.launch {
+            loadSentenceExamples()
             repository.ensureWordsPopulated(getApplication())
         }
         // Redirect to onboarding if not completed
@@ -316,11 +312,15 @@ class QwertyViewModel(
     // 4. Fill to minimum 20 words if total is insufficient
     fun startPracticeSession(mode: GameMode, usePersonalizedPlan: Boolean = false) {
         viewModelScope.launch {
+            loadSentenceExamples()
             repository.ensureWordsPopulated(getApplication())
             
             val totalLimit = wordsPerSession.value.coerceAtLeast(20)
             val currentCategoryWords = repository.getWordsWithProgressByCategory(_selectedCategory.value).first()
-            val enrichedCategoryWords = currentCategoryWords.map { enrichWordWithProgress(it) }
+            val enrichedCategoryWords = currentCategoryWords.map { enrichWordWithProgress(it) }.filter {
+                mode !in listOf(GameMode.TYPING, GameMode.CLOZE) ||
+                    (it.word.exampleSentence.isNotBlank() && sentenceContains(it.word.exampleSentence, it.word.word))
+            }
 
             val now = System.currentTimeMillis()
             val dueWrong = enrichedCategoryWords.filter { 
@@ -422,7 +422,7 @@ class QwertyViewModel(
                     isAnswerRevealed = false
                 )
                 generateChoicesForCurrentIndex()
-                if (autoPlaySpeech.value) {
+                if (autoPlaySpeech.value && mode !in listOf(GameMode.TYPING, GameMode.CLOZE)) {
                     triggerSpeakForCurrentWord()
                 }
             }
@@ -559,7 +559,7 @@ class QwertyViewModel(
                 )
                 generateChoicesForCurrentIndex()
                 if (autoPlaySpeech.value) {
-                    triggerSpeakForCurrentWord()
+                    if (_activeMode.value !in listOf(GameMode.TYPING, GameMode.CLOZE)) triggerSpeakForCurrentWord()
                 }
             }
         }
@@ -852,6 +852,7 @@ class QwertyViewModel(
 
     fun submitClozeAnswer() {
         val state = _typingState.value
+        if (state.isAnswerRevealed || state.isCompleted) return
         val wordData = currentWord ?: return
         val trimmedInput = state.typedText.trim()
         val isCorrect = trimmedInput.equals(wordData.word.trim(), ignoreCase = true)

@@ -108,6 +108,17 @@ internal fun ExamPracticeScreen(initialBook: String, speak: (String) -> Unit, ex
     var graded by rememberSaveable(origin, exam, kind, paper, after, round, index) { mutableStateOf(false) }
     BackHandler(onBack = exit)
 
+    if (exam == "ielts" && origin == "practice") {
+        Column(Modifier.fillMaxSize()) {
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                FilterRow(exams, exam) { exam = it }
+                FilterRow(mapOf("practice" to "模拟练习", "past" to "考生回忆"), origin) { origin = it }
+            }
+            IeltsSetBrowser(speak, Modifier.weight(1f))
+        }
+        return
+    }
+
     LaunchedEffect(origin, exam, kind, paper, after, round, studyKey) {
         if (batch.isNotEmpty()) return@LaunchedEffect
         if (origin == "past" && studyKey.isBlank()) return@LaunchedEffect
@@ -194,7 +205,7 @@ internal fun ExamPracticeScreen(initialBook: String, speak: (String) -> Unit, ex
                 val q = questions.getJSONObject(index)
                 val answer = q.getString("answer")
                 val options = q.getJSONArray("choices")
-                val speech = q.getString("speech").ifBlank { if (q.getString("kind") == "reading") q.getString("prompt") else "" }
+                val speech = q.getString("speech").ifBlank { if (q.getString("kind") == "reading") q.optString("context").ifBlank { q.getString("prompt") } else "" }
                 val audioPrompt = q.getString("kind") in listOf("dictation", "listening")
                 Text("第 ${index + 1} / ${questions.length()} 题 · ${(types + pastTypes)[q.getString("kind")]}")
                 if (origin == "past") {

@@ -27,6 +27,14 @@ class ApiTest(unittest.TestCase):
                 self.assertTrue(all((x["exam"], x["kind"]) == (exam, kind) for x in items))
 
     def test_audio_is_playable_pcm(self):
+        import hashlib
+        voices = {}
+        for accent in ("US", "UK"):
+            for gender in ("male", "female"):
+                sample = self.get("/api/audio?" + urlencode(dict(text="Meet at 3:30. The fee is 24.95 pounds.",
+                                                                 accent=accent, gender=gender)))
+                voices[(accent, gender)] = hashlib.sha256(sample).hexdigest()
+            self.assertNotEqual(voices[(accent, "male")], voices[(accent, "female")])
         for accent in ("US", "UK"):
             data = self.get("/api/audio?" + urlencode(dict(text="Please book a room for Thursday.",
                                                            accent=accent, speed="1.1")))
@@ -40,7 +48,7 @@ class ApiTest(unittest.TestCase):
 
     def test_api_only(self):
         for path, status in [("/", 404), ("/api/questions?exam=other", 400),
-                             ("/api/questions?exam=cet4&limit=-1", 400), ("/api/audio?speed=nan", 400)]:
+                             ("/api/questions?exam=cet4&limit=-1", 400), ("/api/audio?gender=unknown&text=hello", 400), ("/api/audio?speed=nan", 400)]:
             with self.assertRaises(HTTPError) as caught:
                 self.get(path)
             self.assertEqual(caught.exception.code, status)

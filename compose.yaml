@@ -1,6 +1,6 @@
 services:
   api:
-    image: lexiflow-api:1.0
+    image: lexiflow-api:1.2
     build: .
     restart: unless-stopped
     ports:

@@ -41,21 +41,22 @@ class ExamPracticeTest {
         }
     }
 
-    @Test fun offlineListeningCanBePlayedAnsweredAndGraded() {
+    @Test fun offlineIeltsSetCanBePlayedAndSubmitted() {
         var spoken = ""
-        compose.setContent {
-            ExamPracticeScreen("IELTS", { spoken = it }, {}, load = { _, _ -> error("offline") })
+        compose.setContent { IeltsSetBrowser({ spoken = it }, load = { error("offline") }) }
+        compose.onNodeWithText("听力").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("图书馆入会咨询").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithTag("ielts_questions").performScrollToNode(hasTestTag("ielts_play"))
+        compose.onNodeWithTag("ielts_play").performSemanticsAction(SemanticsActions.OnClick)
+        compose.runOnIdle {
+            org.junit.Assert.assertTrue(spoken.contains("twenty-four pounds ninety-five"))
+            org.junit.Assert.assertFalse(spoken.any { Character.UnicodeScript.of(it.code) == Character.UnicodeScript.HAN })
         }
-        compose.onNodeWithText("听力").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
-        compose.waitUntil(10000) { compose.onAllNodesWithText("朗读").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("当前使用内置练习。").assertExists()
-        compose.onNodeWithText("朗读").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
-        compose.runOnIdle { assertEquals(true, spoken.contains("Thursday")) }
-        compose.onNodeWithText("你的答案").performScrollTo().performTextInput(" thursday ")
-        compose.onNodeWithText("提交答案").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
-        org.junit.Assert.assertTrue(compose.onRoot().printToString(), compose.onAllNodesWithText("答对了").fetchSemanticsNodes().isNotEmpty())
-        compose.onNodeWithText("查看成绩").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
-        compose.waitUntil(5000) { compose.onAllNodesWithText("再练一组").fetchSemanticsNodes().isNotEmpty() }
-        org.junit.Assert.assertTrue(compose.onRoot().printToString(), compose.onAllNodesWithText("本组答对 1 / 1 题").fetchSemanticsNodes().isNotEmpty())
+        compose.onNodeWithTag("ielts_questions").performScrollToNode(hasTestTag("ielts_input_1"))
+        compose.onNodeWithTag("ielts_input_1").performTextInput("Bell")
+        compose.onNodeWithTag("ielts_questions").performScrollToNode(hasTestTag("ielts_submit"))
+        compose.onNodeWithTag("ielts_submit").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithTag("ielts_questions").performScrollToNode(hasText("本组答对 1 / 10 题"))
+        compose.onNodeWithText("本组答对 1 / 10 题").assertExists()
     }
 }

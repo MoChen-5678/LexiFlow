@@ -13,9 +13,11 @@ from urllib.request import Request, urlopen
 from past import Archive, SOURCES
 from mirrors import head, read_json
 from schedule import daily, DAY
+from ielts import load_sets, flat_questions
 from bank import Bank, EXAMS, KINDS, daily_questions
 
 ROOT = Path(__file__).resolve().parent
+IELTS_SETS = load_sets(ROOT / "ielts_sets.json")
 DB = Bank(os.environ.get("LEXIFLOW_DB", "/data/questions.sqlite3"))
 ARCHIVE = Archive(DB.path)
 for repo, branch in SOURCES.items():
@@ -101,6 +103,8 @@ def app(env, start_response):
     if path == "/health":
         return send("200 OK", {"status": "ready", "update": status, "past_sources": ARCHIVE.status(), "check_interval_seconds": DAY,
                                "next_checks_utc": deadlines()})
+    if path == "/api/ielts/sets":
+        return send("200 OK", IELTS_SETS)
     if path == "/api/papers" and param("exam") in ("cet4", "cet6"):
         return send("200 OK", {"papers": ARCHIVE.papers(param("exam"))})
     if path == "/api/questions":
@@ -118,19 +122,25 @@ def app(env, start_response):
             if not after.isascii() or not after.isdecimal() or len(after)>3 or len(paper)>16:
                 return send("400 Bad Request", {"error": "invalid paper or question number"})
             return send("200 OK", {"questions": ARCHIVE.questions(exam, kind, min(4, int(limit)), paper, int(after))})
+        if exam == "ielts" and kind in ("all", "reading", "listening", "cloze"):
+            return send("200 OK", {"questions": flat_questions(IELTS_SETS, kind)[:int(limit)]})
         return send("200 OK", {"questions": DB.batch(exam, kind, int(limit))})
     if path == "/api/audio":
         text, accent, speed = param("text").strip(), param("accent", "US"), param("speed", "1")
+        gender = param("gender", "female")
         try:
             rate = float(speed)
         except ValueError:
             rate = 0
-        if not 0.5 <= rate <= 2 or accent not in ("US", "UK") or not 0 < len(text) <= 1000:
+        if any("\u4e00" <= char <= "\u9fff" for char in text):
+            return send("400 Bad Request", {"error": "English speech text required"})
+        if not 0.5 <= rate <= 2 or gender not in ("female", "male") or accent not in ("US", "UK") or not 0 < len(text) <= 1000:
             return send("400 Bad Request", {"error": "invalid speech request"})
         if not audio_slots.acquire(blocking=False):
             return send("503 Service Unavailable", {"error": "speech engine busy"})
         try:
-            audio = subprocess.run(["espeak-ng", "--stdout", "-v", "en-us" if accent == "US" else "en-gb",
+            voice = ("en-us" if accent == "US" else "en") + ("+f3" if gender == "female" else "")
+            audio = subprocess.run(["espeak-ng", "--stdout", "-v", voice,
                                     "-s", str(round(160 * rate)), "--stdin"], input=text.encode(),
                                    stdout=subprocess.PIPE, timeout=8, check=True).stdout
             # eSpeak writes unknown lengths to a pipe. Android players expect a finite RIFF file.
