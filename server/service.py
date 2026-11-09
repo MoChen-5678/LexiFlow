@@ -9,10 +9,13 @@ from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlsplit
 from urllib.request import Request, urlopen
 
+from past import Archive, INTERVAL as PAST_INTERVAL
 from bank import Bank, EXAMS, KINDS, daily_questions
 
 ROOT = Path(__file__).resolve().parent
 DB = Bank(os.environ.get("LEXIFLOW_DB", "/data/questions.sqlite3"))
+ARCHIVE = Archive(DB.path)
+threading.Thread(target=ARCHIVE.monitor, daemon=True, name="past-paper-sync").start()
 DICTS = Path(os.environ.get("LEXIFLOW_DICTS", ROOT / "dicts"))
 FEED = os.environ.get("QUESTION_FEED_URL", "https://raw.githubusercontent.com/MoChen-5678/LexiFlow/main/app/src/main/assets/exam_questions.json")
 INTERVAL = float(os.environ.get("UPDATE_HOURS", "24")) * 3600
@@ -77,6 +80,9 @@ def app(env, start_response):
                               ("X-Content-Type-Options", "nosniff")])
         return [data]
 
+    if env["PATH_INFO"] == "/hooks/github" and env["REQUEST_METHOD"] == "POST":
+        code = ARCHIVE.webhook(env)
+        return send(code, {"status": code.split(" ")[0]})
     if env["REQUEST_METHOD"] != "GET":
         return send("405 Method Not Allowed", {"error": "GET required"})
     path = env["PATH_INFO"]
@@ -84,11 +90,24 @@ def app(env, start_response):
     def param(name, default=""):
         return params.get(name, [default])[0]
     if path == "/health":
-        return send("200 OK", {"status": "ready", "update": status})
+        return send("200 OK", {"status": "ready", "update": status, "past_sources": ARCHIVE.status(), "past_poll_seconds": PAST_INTERVAL})
+    if path == "/api/papers" and param("exam") in ("cet4", "cet6"):
+        return send("200 OK", {"papers": ARCHIVE.papers(param("exam"))})
     if path == "/api/questions":
         exam, kind, limit = param("exam"), param("kind", "all"), param("limit", "10")
-        if exam not in EXAMS or kind not in (*KINDS, "all") or not limit.isascii() or not limit.isdecimal() or len(limit) > 2 or not 1 <= int(limit) <= 30:
+        origin = param("origin", "practice")
+        if origin not in ("past", "practice"):
+            return send("400 Bad Request", {"error": "invalid origin"})
+        allowed = (*KINDS, "all", "speaking", "matching") if origin == "past" else (*KINDS, "all")
+        if exam not in EXAMS or kind not in allowed or not limit.isascii() or not limit.isdecimal() or len(limit) > 2 or not 1 <= int(limit) <= 30:
             return send("400 Bad Request", {"error": "invalid exam, kind or limit"})
+        if origin == "past":
+            if not ARCHIVE.authorized(env):
+                return send("403 Forbidden", {"error": "study key required"})
+            paper, after = param("paper"), param("after", "0")
+            if not after.isascii() or not after.isdecimal() or len(after)>3 or len(paper)>16:
+                return send("400 Bad Request", {"error": "invalid paper or question number"})
+            return send("200 OK", {"questions": ARCHIVE.questions(exam, kind, min(4, int(limit)), paper, int(after))})
         return send("200 OK", {"questions": DB.batch(exam, kind, int(limit))})
     if path == "/api/audio":
         text, accent, speed = param("text").strip(), param("accent", "US"), param("speed", "1")

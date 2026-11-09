@@ -1,6 +1,6 @@
 FROM python:3.12-slim-bookworm
 RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
- && apt-get update && apt-get install -y --no-install-recommends espeak-ng gunicorn \
+ && apt-get update && apt-get install -y --no-install-recommends espeak-ng gunicorn git \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY server /app

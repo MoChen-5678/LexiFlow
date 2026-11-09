@@ -9,6 +9,12 @@ services:
       - questions:/data
     environment:
       QUESTION_FEED_URL: ${QUESTION_FEED_URL:-https://raw.githubusercontent.com/MoChen-5678/LexiFlow/main/app/src/main/assets/exam_questions.json}
+      PAST_POLL_SECONDS: ${PAST_POLL_SECONDS:-180}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
+      CET_PAST_REPO: ${CET_PAST_REPO:-couldyyy9/cet-website}
+      CET_PAST_BRANCH: ${CET_PAST_BRANCH:-master}
+      IELTS_RECALL_REPO: ${IELTS_RECALL_REPO:-eugenewang5425/ielts-corpus-lab}
+      IELTS_RECALL_BRANCH: ${IELTS_RECALL_BRANCH:-main}
       UPDATE_HOURS: ${UPDATE_HOURS:-24}
 volumes:
   questions:

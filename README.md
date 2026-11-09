@@ -30,9 +30,27 @@ docker run -d --name lexiflow-api --restart unless-stopped -p 5000:5000 -v lexif
 
 服务启动时导入内置模拟题，默认每 24 小时检查 GitHub 上的 `app/src/main/assets/exam_questions.json`。主分支尚未包含题源时，服务从本次功能分支读取。相同 ID 更新原题，不同 ID 新增。整批校验通过才写库。下载或校验失败时继续提供已有题目，最迟 15 分钟后重试。
 
-每天按 UTC 日期为每个考试从现有词库选取最多 8 道新听写、8 道新词义，并生成有关活动地点、时间和改期信息的听力、阅读与填空。相同单词和题型不会重复收录；词库用完后不再生成这一类新题。内容为专项练习，不含官方历年真题。
+每天按 UTC 日期为每个考试从现有词库选取最多 8 道新听写、8 道新词义，并生成有关活动地点、时间和改期信息的听力、阅读与填空。相同单词和题型不会重复收录；词库用完后不再生成这一类新题。这部分内容在 App 中标为「模拟练习」。
 
 启动 Compose 前可设置 `QUESTION_FEED_URL` 指向自己的 HTTPS JSON 题源，设置 `UPDATE_HOURS` 调整轮询间隔。格式见内置题库。每题须有稳定的 `id`、`exam`、`kind`、`prompt`、`answer` 和 `explanation`，听力与听写还须有 `speech`。选择题的答案须与一个选项一致。
+
+## 历年真题与考生回忆
+
+在「备考练习」选择四级或六级，再点「历年真题」。四六级题源提供 2024 年 6 月至 2025 年 12 月共 24 套试卷，覆盖听力、选词填空、段落匹配和仔细阅读。选定卷次后按题号继续做，选择全部试卷则随机抽题。听力使用上游原卷的整段录音，可暂停、拖动进度。每题显示考期、卷次、题号和来源。[四六级题源与使用说明](https://github.com/couldyyy9/cet-website)
+
+雅思的「考生回忆」收录具有考期、地区和来源链接的口语题。仅采用上游标记为考生实考回忆的来源，排除预测和无地区记录。口语采用自练模式，完成后记录本组练习题数。[雅思数据与来源说明](https://github.com/eugenewang5425/ielts-corpus-lab)
+
+真题在部署后同步到本机数据卷。按上游使用说明，真题功能供个人学习使用。首次打开真题或回忆题时，需要输入本机生成的个人学习码，可在部署主机运行以下命令查看。
+
+```sh
+docker compose -p lexiflow exec api cat /data/study-key
+```
+
+App 将学习码保存在设备的私有、不参与备份的目录。每次请求用它签名，默认 HTTP 部署适用于受信任网络。镜像与安装包均不附带第三方试卷、回忆题或原卷音频。
+
+服务默认每 180 秒检查两个 GitHub 分支。若上游提交发生变化，就从该提交读取数据，并在一个事务中替换对应来源的题目。失败会保留上一版本。查看 `/health` 中的 `past_sources` 可看到提交号、入库数量和错误信息。第三方仓库的变化通常在一次检查间隔加下载时间后可见。可用 `PAST_POLL_SECONDS` 调整，最短 60 秒。
+
+如管理上游仓库或自己的 fork，可配置 GitHub push webhook，在提交时立即唤醒同步。将 fork 的仓库名、分支名写入 `CET_PAST_REPO` / `CET_PAST_BRANCH` 或 `IELTS_RECALL_REPO` / `IELTS_RECALL_BRANCH`，在部署环境设置 `GITHUB_WEBHOOK_SECRET` 后重建容器。在该仓库创建仅订阅 Push 的 webhook，Content type 选 `application/json`，目标为部署服务的 `/hooks/github`，使用同一密钥。服务校验 GitHub 签名和分支，再读取真实提交。
 
 ## Android
 
