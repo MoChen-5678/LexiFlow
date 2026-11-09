@@ -1,44 +1,56 @@
 import json
 import logging
+from functools import partial
+from contextlib import closing
 import os
 import subprocess
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlsplit
 from urllib.request import Request, urlopen
 
-from past import Archive, INTERVAL as PAST_INTERVAL
+from past import Archive, SOURCES
+from mirrors import head, read_json
+from schedule import daily, DAY
 from bank import Bank, EXAMS, KINDS, daily_questions
 
 ROOT = Path(__file__).resolve().parent
 DB = Bank(os.environ.get("LEXIFLOW_DB", "/data/questions.sqlite3"))
 ARCHIVE = Archive(DB.path)
-threading.Thread(target=ARCHIVE.monitor, daemon=True, name="past-paper-sync").start()
+for repo, branch in SOURCES.items():
+    daily(DB.path, f"past:{repo}:{branch}", partial(ARCHIVE.sync, repo))
 DICTS = Path(os.environ.get("LEXIFLOW_DICTS", ROOT / "dicts"))
-FEED = os.environ.get("QUESTION_FEED_URL", "https://raw.githubusercontent.com/MoChen-5678/LexiFlow/main/app/src/main/assets/exam_questions.json")
-INTERVAL = float(os.environ.get("UPDATE_HOURS", "24")) * 3600
-if not 1 <= INTERVAL <= 30 * 86400:
-    raise ValueError("UPDATE_HOURS must be between one second and thirty days")
+FEED = os.environ.get("QUESTION_FEED_URL", "").strip()
 audio_slots = threading.BoundedSemaphore(2)
-status = {"source": "pending", "last_success": None}
+with closing(DB.connect()) as db, db:
+    db.execute("CREATE TABLE IF NOT EXISTS feed_status (id INTEGER PRIMARY KEY, state TEXT, last_success TEXT)")
+    previous = db.execute("SELECT state,last_success FROM feed_status WHERE id=1").fetchone()
+status = {"source": previous[0] if previous else "pending", "last_success": previous[1] if previous else None}
 
 
 def today():
     return datetime.now(timezone.utc).date().isoformat()
 
 
-def import_feed(url):
-    if urlsplit(url).scheme != "https":
-        raise ValueError("feed requires HTTPS")
-    with urlopen(Request(url, headers={"User-Agent": "LexiFlow/1.0"}), timeout=12) as response:
-        if urlsplit(response.geturl()).scheme != "https":
-            raise ValueError("feed redirected outside HTTPS")
-        payload = response.read(2_000_001)
-    if len(payload) > 2_000_000:
-        raise ValueError("feed exceeds 2 MB")
-    rows = json.loads(payload)
+def import_feed():
+    if FEED:
+        if urlsplit(FEED).scheme != "https":
+            raise ValueError("feed requires HTTPS")
+        with urlopen(Request(FEED, headers={"User-Agent": "LexiFlow/1.0"}), timeout=15) as response:
+            if urlsplit(response.geturl()).scheme != "https":
+                raise ValueError("feed redirected outside HTTPS")
+            payload = response.read(2_000_001)
+        if len(payload) > 2_000_000:
+            raise ValueError("feed exceeds 2 MB")
+        rows = json.loads(payload)
+    else:
+        repo = "MoChen-5678/LexiFlow"
+        path = "app/src/main/assets/exam_questions.json"
+        try:
+            rows = read_json(repo, head(repo, "main"), path, 2_000_000)
+        except FileNotFoundError:
+            rows = read_json(repo, head(repo, "codex/exam-practice"), path, 2_000_000)
     if not isinstance(rows, list) or not rows or len(rows) > 3000:
         raise ValueError("invalid question feed")
     if any(not isinstance(row, dict) or str(row.get("id", "")).startswith("daily-") for row in rows):
@@ -48,28 +60,28 @@ def import_feed(url):
 
 def refresh():
     global status
-    while True:
-        try:
-            daily_questions(DB, DICTS, today())
-            try:
-                import_feed(FEED)
-            except HTTPError as exc:
-                canonical = "https://raw.githubusercontent.com/MoChen-5678/LexiFlow/main/app/src/main/assets/exam_questions.json"
-                if exc.code != 404 or FEED != canonical:
-                    raise
-                import_feed(canonical.replace("/main/", "/codex/exam-practice/", 1))
-            status = {"source": "ok", "last_success": datetime.now(timezone.utc).isoformat()}
-        except Exception as exc:
-            logging.warning("Question refresh failed: %s", exc)
-            status = {**status, "source": "retrying"}
-        threading.Event().wait(INTERVAL if status["source"] == "ok" else min(900, INTERVAL))
+    try:
+        daily_questions(DB, DICTS, today())
+        import_feed()
+        status = {"source": "ok", "last_success": datetime.now(timezone.utc).isoformat()}
+    except Exception as exc:
+        logging.warning("Question refresh failed: %s", exc)
+        status = {**status, "source": "failed"}
+    with closing(DB.connect()) as db, db:
+        db.execute("INSERT OR REPLACE INTO feed_status VALUES(1,?,?)", (status["source"], status["last_success"]))
 
 
 existing_ids = DB.existing()
 DB.save([row for row in json.loads((ROOT / "questions.json").read_text(encoding="utf8"))
          if row["id"] not in existing_ids], today())
 daily_questions(DB, DICTS, today())
-threading.Thread(target=refresh, daemon=True, name="question-updater").start()
+daily(DB.path, "practice:", refresh)
+
+
+def deadlines():
+    with closing(DB.connect()) as db:
+        return {job.rstrip(":"): datetime.fromtimestamp(due, timezone.utc).isoformat()
+                for job, due in db.execute("SELECT name,due FROM sync_clock")}
 
 
 def app(env, start_response):
@@ -80,9 +92,6 @@ def app(env, start_response):
                               ("X-Content-Type-Options", "nosniff")])
         return [data]
 
-    if env["PATH_INFO"] == "/hooks/github" and env["REQUEST_METHOD"] == "POST":
-        code = ARCHIVE.webhook(env)
-        return send(code, {"status": code.split(" ")[0]})
     if env["REQUEST_METHOD"] != "GET":
         return send("405 Method Not Allowed", {"error": "GET required"})
     path = env["PATH_INFO"]
@@ -90,7 +99,8 @@ def app(env, start_response):
     def param(name, default=""):
         return params.get(name, [default])[0]
     if path == "/health":
-        return send("200 OK", {"status": "ready", "update": status, "past_sources": ARCHIVE.status(), "past_poll_seconds": PAST_INTERVAL})
+        return send("200 OK", {"status": "ready", "update": status, "past_sources": ARCHIVE.status(), "check_interval_seconds": DAY,
+                               "next_checks_utc": deadlines()})
     if path == "/api/papers" and param("exam") in ("cet4", "cet6"):
         return send("200 OK", {"papers": ARCHIVE.papers(param("exam"))})
     if path == "/api/questions":

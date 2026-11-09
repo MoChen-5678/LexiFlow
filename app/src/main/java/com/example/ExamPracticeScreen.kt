@@ -96,7 +96,7 @@ internal fun ExamPracticeScreen(initialBook: String, speak: (String) -> Unit, ex
     var papers by remember(origin, exam) { mutableStateOf(emptyList<String>()) }
     LaunchedEffect(origin, exam) {
         if (origin == "past" && exam != "ielts") {
-            papers = withContext(Dispatchers.IO) { try { listPapers(exam) } catch (_: java.io.IOException) { emptyList() } }
+            papers = withContext(Dispatchers.IO) { try { listPapers(exam) } catch (_: java.io.IOException) { emptyList() } catch (_: org.json.JSONException) { emptyList() } }
         }
     }
     var round by rememberSaveable(origin, exam, kind, paper, after) { mutableIntStateOf(0) }
@@ -200,9 +200,15 @@ internal fun ExamPracticeScreen(initialBook: String, speak: (String) -> Unit, ex
                 if (origin == "past") {
                     Text(q.getString("label"), fontWeight = FontWeight.Bold)
                     val uri = androidx.compose.ui.platform.LocalUriHandler.current
-                    TextButton(onClick = { uri.openUri(q.getString("source")) }) { Text("查看题目来源") }
+                    TextButton(onClick = { runCatching { uri.openUri(q.getString("source")) }.onFailure {
+                        android.widget.Toast.makeText(context, "无法打开来源链接。", android.widget.Toast.LENGTH_SHORT).show()
+                    } }) { Text("查看题目来源") }
                     if (q.optString("context").isNotBlank()) Text(q.getString("context"))
-                    if (q.optString("audio").isNotBlank()) PaperRecording(q.getString("audio"))
+                    if (q.optString("audio").isNotBlank()) {
+                        val mirrors = q.optJSONArray("audioMirrors")
+                        val urls = if (mirrors == null) listOf(q.getString("audio")) else (0 until mirrors.length()).map { mirrors.getString(it) }
+                        PaperRecording(urls)
+                    }
                 }
                 Text(q.getString("prompt"), style = MaterialTheme.typography.titleMedium)
                 if (speech.isNotBlank() && (audioPrompt || graded || q.getString("kind") in listOf("vocabulary", "reading", "speaking"))) {

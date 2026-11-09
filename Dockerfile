@@ -1,5 +1,5 @@
-FROM python:3.12-slim-bookworm
-RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
+FROM docker.m.daocloud.io/library/python:3.12-slim-bookworm@sha256:935c3c5b12357a7e10caa9c1e6ca5692344d97cf229832ef584be2cec9fc03df
+RUN sed -i 's|http://deb.debian.org|https://repo.huaweicloud.com|g' /etc/apt/sources.list.d/debian.sources \
  && apt-get update && apt-get install -y --no-install-recommends espeak-ng gunicorn git \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app

@@ -1,15 +1,13 @@
 import hashlib
 import hmac
-import io
-import json
 import tempfile
 import time
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import patch
 
-from past import Archive, CET, SOURCES, parse_paper, recall_rows
+from past import Archive, CET, parse_paper, recall_rows
+from schedule import reserve, DAY
 
 
 class PastTests(unittest.TestCase):
@@ -24,15 +22,15 @@ class PastTests(unittest.TestCase):
             no=46, passage="one", stem="Question?", options={"A": "Yes", "B": "No"}, answer="B")])
         rows = parse_paper(paper, CET, "a" * 40)
         self.assertEqual(rows[0]["answer"], "B. No")
-        with patch("past.subprocess.run", return_value=SimpleNamespace(stdout="a" * 40)), patch("past.cet_rows", return_value=rows) as fetch:
+        with patch("past.head", return_value="a" * 40), patch("past.cet_rows", return_value=rows) as fetch:
             self.archive.sync(CET)
             self.archive.sync(CET)
             fetch.assert_called_once()
-        with patch("past.subprocess.run", return_value=SimpleNamespace(stdout="b" * 40)), patch("past.cet_rows", side_effect=ValueError("invalid upstream")):
+        with patch("past.head", return_value="b" * 40), patch("past.cet_rows", side_effect=ValueError("invalid upstream")):
             self.archive.sync(CET)
         self.assertEqual(rows, self.archive.questions("cet4", "all", 10))
         self.assertEqual(self.archive.status()[0]["revision"], "a" * 40)
-        with patch("past.subprocess.run", return_value=SimpleNamespace(stdout="b" * 40)), patch("past.cet_rows", return_value=[dict(rows[0], answer="A. Yes")]):
+        with patch("past.head", return_value="b" * 40), patch("past.cet_rows", return_value=[dict(rows[0], answer="A. Yes")]):
             self.archive.sync(CET)
         self.assertEqual(self.archive.questions("cet4", "all", 10)[0]["answer"], "A. Yes")
 
@@ -47,7 +45,7 @@ class PastTests(unittest.TestCase):
         self.assertEqual(result[0]["answer"], "")
         self.assertIn("2025-06", result[0]["label"])
 
-    def test_signed_access_and_push(self):
+    def test_signed_access(self):
         stamp = str(int(time.time()))
         path = "/api/questions"
         query = "exam=cet4&origin=past"
@@ -55,11 +53,17 @@ class PastTests(unittest.TestCase):
         env = dict(PATH_INFO=path, QUERY_STRING=query, HTTP_X_STUDY_TIME=stamp, HTTP_X_STUDY_SIGNATURE=signature)
         self.assertTrue(self.archive.authorized(env))
         self.assertFalse(self.archive.authorized(dict(env, QUERY_STRING="exam=ielts")))
-        body = json.dumps({"repository": {"full_name": CET}, "ref": "refs/heads/" + SOURCES[CET]}).encode()
-        with patch.dict("os.environ", GITHUB_WEBHOOK_SECRET="test-only"):
-            env = {"CONTENT_LENGTH": str(len(body)), "wsgi.input": io.BytesIO(body), "HTTP_X_GITHUB_EVENT":"push"}
-            self.assertEqual(self.archive.webhook(env), "403 Forbidden")
-            env["wsgi.input"] = io.BytesIO(body)
-            env["HTTP_X_HUB_SIGNATURE_256"] = "sha256=" + hmac.new(b"test-only", body, hashlib.sha256).hexdigest()
-            self.assertEqual(self.archive.webhook(env), "202 Accepted")
-            self.assertTrue(self.archive.wake.is_set())
+
+    def test_mirrors_retry_invalid_content_without_contacting_origin(self):
+        import io
+        from mirrors import read_json
+        with patch("mirrors.urlopen", side_effect=[io.BytesIO(b"<html>"), io.BytesIO(b'{"ok":true}')]) as fetch:
+            self.assertTrue(read_json(CET, "a"*40, "public/bank/manifest.json", 400)["ok"])
+            self.assertEqual([call.args[0].host for call in fetch.call_args_list], ["cdn.jsdmirror.cn", "gh-proxy.org"])
+
+    def test_daily_clock_survives_restart_and_failed_attempt(self):
+        now = 1700000000
+        self.assertEqual(reserve(self.archive.path, "source", now), (True, now + DAY))
+        reopened = Archive(self.archive.path)
+        self.assertEqual(reserve(reopened.path, "source", now + DAY - 1), (False, now + DAY))
+        self.assertEqual(reserve(reopened.path, "source", now + DAY), (True, now + 2 * DAY))

@@ -11,7 +11,7 @@ import kotlinx.coroutines.delay
 import java.util.Locale
 
 @Composable
-internal fun PaperRecording(url: String) = key(url) {
+internal fun PaperRecording(urls: List<String>) = key(urls) {
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
     var loading by remember { mutableStateOf(false) }
     var playing by remember { mutableStateOf(false) }
@@ -19,6 +19,7 @@ internal fun PaperRecording(url: String) = key(url) {
     var duration by remember { mutableIntStateOf(0) }
     var position by remember { mutableFloatStateOf(0f) }
     var dragging by remember { mutableStateOf(false) }
+    var route by remember { mutableIntStateOf(0) }
     val owner = LocalLifecycleOwner.current
     fun release() {
         player?.release()
@@ -41,38 +42,52 @@ internal fun PaperRecording(url: String) = key(url) {
             delay(350)
         }
     }
+    fun open(index: Int) {
+        release()
+        if (index >= urls.size) {
+            error = true
+            return
+        }
+        route = index
+        loading = true
+        try {
+            val mp = MediaPlayer()
+            player = mp
+            mp.setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
+            mp.setOnErrorListener { failed, _, _ ->
+                if (player == failed) open(index + 1)
+                true
+            }
+            mp.setOnPreparedListener {
+                if (player == it) {
+                    loading = false
+                    duration = it.duration
+                    runCatching { it.start(); playing = true }.onFailure { open(index + 1) }
+                }
+            }
+            mp.setOnCompletionListener { if (player == it) { playing = false; it.seekTo(0); position = 0f } }
+            mp.setDataSource(urls[index])
+            mp.prepareAsync()
+        } catch (_: Exception) {
+            open(index + 1)
+        }
+    }
+    LaunchedEffect(player, loading) {
+        if (loading) {
+            val attempt = player
+            delay(15000)
+            if (player == attempt && loading) open(route + 1)
+        }
+    }
     OutlinedButton(onClick = {
         error = false
         val existing = player
-        try {
-            if (existing != null) {
+        if (existing == null) open(0) else {
+            runCatching {
                 if (playing) existing.pause() else existing.start()
                 playing = !playing
-            } else {
-                loading = true
-                val mp = MediaPlayer()
-                player = mp
-                mp.setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
-                mp.setOnErrorListener { failed, _, _ ->
-                    if (player == failed) { release(); error = true }
-                    true
-                }
-                mp.setOnPreparedListener {
-                    if (player == it) {
-                        loading = false
-                        duration = it.duration
-                        it.start()
-                        playing = true
-                    }
-                }
-                mp.setOnCompletionListener { if (player == it) { playing = false; it.seekTo(0); position = 0f } }
-                mp.setDataSource(url)
-                mp.prepareAsync()
-            }
-        } catch (_: Exception) {
-            release()
-            error = true
+            }.onFailure { open(route + 1) }
         }
     }, enabled = !loading) {
         Text(if (loading) "正在载入原卷录音…" else if (playing) "暂停录音" else "播放原卷录音")

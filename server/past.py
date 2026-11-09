@@ -6,31 +6,20 @@ import os
 import re
 import secrets
 import sqlite3
-import subprocess
 import time
-import threading
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.request import Request, urlopen
+
+from mirrors import head, read_json, urls
 
 CET = os.environ.get("CET_PAST_REPO", "couldyyy9/cet-website")
 IELTS = os.environ.get("IELTS_RECALL_REPO", "eugenewang5425/ielts-corpus-lab")
 SOURCES = {CET: os.environ.get("CET_PAST_BRANCH", "master"), IELTS: os.environ.get("IELTS_RECALL_BRANCH", "main")}
-INTERVAL = max(60, int(os.environ.get("PAST_POLL_SECONDS", "180")))
 for name, branch in SOURCES.items():
     if not re.fullmatch(r"[A-Za-z0-9._-]+/[A-Za-z0-9._-]+", name) or not re.fullmatch(r"[A-Za-z0-9_./-]+", branch):
         raise ValueError("invalid source repository or branch")
-
-
-def read_json(repo, rev, path, limit):
-    url = f"https://raw.githubusercontent.com/{repo}/{rev}/{path}"
-    with urlopen(Request(url, headers={"User-Agent": "LexiFlow-study"}), timeout=20) as response:
-        data = response.read(limit + 1)
-    if len(data) > limit:
-        raise ValueError("source exceeds size limit")
-    return json.loads(data)
 
 
 def parse_paper(paper, repo, revision):
@@ -50,7 +39,7 @@ def parse_paper(paper, repo, revision):
             if not paper["hasAudio"]: continue
             kind = "listening"
             stem = q.get("groupNote") or "听原卷录音，选择答案。"
-            audio = f"https://raw.githubusercontent.com/{repo}/{revision}/public/library/{level}/{pid}/listening.mp3"
+            audio = urls(repo, revision, f"public/library/{level}/{pid}/listening.mp3")[0]
         elif kind == "mcq":
             kind = "reading"
             if not context: continue
@@ -70,7 +59,8 @@ def parse_paper(paper, repo, revision):
         result.append(dict(id=f"past-{level}-{pid}-{no}", exam=level, kind=kind, prompt=stem,
             context=context, choices=list(choices.values()), answer=choices[key], speech="", audio=audio,
             explanation=f"原卷答案索引：{key}", label=f"{paper['title']} · 第 {no} 题",
-            source=citation, origin="past", paper=pid, number=no))
+            source=citation, origin="past", paper=pid, number=no,
+            audioMirrors=urls(repo, revision, f"public/library/{level}/{pid}/listening.mp3") if audio else []))
     return result
 
 
@@ -115,7 +105,6 @@ def recall_rows(data):
 class Archive:
     def __init__(self, db_path):
         self.path = db_path
-        self.wake = threading.Event()
         with closing(self.connect()) as db, db:
             db.execute("CREATE TABLE IF NOT EXISTS past_items(id TEXT PRIMARY KEY, repo TEXT, exam TEXT, kind TEXT, body TEXT)")
             db.execute("CREATE INDEX IF NOT EXISTS past_filter ON past_items(exam,kind)")
@@ -139,12 +128,8 @@ class Archive:
         try:
             with closing(self.connect()) as db:
                 saved = db.execute("SELECT revision,parser FROM source_state WHERE repo=?", (repo,)).fetchone()
-            output = subprocess.run(["git", "ls-remote", "--exit-code", f"https://github.com/{repo}.git",
-                    "refs/heads/" + SOURCES[repo]], capture_output=True, text=True, check=True, timeout=20,
-                    env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
-            revision = output.stdout.split()[0]
-            if not re.fullmatch(r"[a-f0-9]{40}", revision): raise ValueError("invalid revision")
-            if saved == (revision, 1):
+            revision = head(repo, SOURCES[repo])
+            if saved == (revision, 2):
                 with closing(self.connect()) as db, db:
                     db.execute("UPDATE source_state SET checked=?,error=NULL WHERE repo=?", (moment, repo))
                 return
@@ -156,19 +141,12 @@ class Archive:
                     db.execute("DELETE FROM past_items WHERE exam=?", (exam,))
                 db.executemany("INSERT INTO past_items VALUES(?,?,?,?,?)",
                     [(r["id"], repo, r["exam"], r["kind"], json.dumps(r, ensure_ascii=False)) for r in rows])
-                db.execute("INSERT OR REPLACE INTO source_state(repo,revision,checked,error,total,parser) VALUES(?,?,?,NULL,?,1)", (repo, revision, moment, len(rows)))
+                db.execute("INSERT OR REPLACE INTO source_state(repo,revision,checked,error,total,parser) VALUES(?,?,?,NULL,?,2)", (repo, revision, moment, len(rows)))
         except Exception as exc:
             with closing(self.connect()) as db, db:
                 db.execute("""INSERT INTO source_state(repo,revision,checked,error,total) VALUES(?,NULL,?,?,0)
                     ON CONFLICT(repo) DO UPDATE SET checked=excluded.checked,error=excluded.error""",
                            (repo, moment, str(exc)[:300]))
-
-    def monitor(self):
-        while True:
-            self.wake.clear()
-            with ThreadPoolExecutor(max_workers=2) as pool:
-                list(pool.map(self.sync, SOURCES))
-            self.wake.wait(INTERVAL)
 
     def status(self):
         with closing(self.connect()) as db:
@@ -199,20 +177,3 @@ class Archive:
         message = stamp + "\n" + env["PATH_INFO"] + "?" + env.get("QUERY_STRING", "")
         digest = hmac.new(self.key.encode(), message.encode(), hashlib.sha256).hexdigest()
         return hmac.compare_digest(digest.encode(), env.get("HTTP_X_STUDY_SIGNATURE", "").encode())
-
-    def webhook(self, env):
-        secret = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
-        if not secret: return "404 Not Found"
-        length = env.get("CONTENT_LENGTH", "")
-        if not length.isdecimal() or len(length)>7 or not 0 < int(length) <= 2000000: return "400 Bad Request"
-        body = env["wsgi.input"].read(int(length))
-        signature = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(signature, env.get("HTTP_X_HUB_SIGNATURE_256", "")): return "403 Forbidden"
-        if env.get("HTTP_X_GITHUB_EVENT") == "push":
-            try:
-                event = json.loads(body)
-                repo = event["repository"]["full_name"]
-                if repo in SOURCES and event["ref"] == "refs/heads/" + SOURCES[repo]: self.wake.set()
-            except (KeyError, TypeError, ValueError):
-                return "400 Bad Request"
-        return "202 Accepted"
