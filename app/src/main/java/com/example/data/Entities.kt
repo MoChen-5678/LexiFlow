@@ -21,6 +21,11 @@ data class Word(
     val examplesJson: String = "" // Serialized array of examples for extra questions
 )
 
+fun Word.belongsTo(book: String): Boolean {
+    val key = book.replace("-", "")
+    return category.replace("-", "").equals(key, true) || bookIds.split(",").any { it.trim().equals(key, true) }
+}
+
 @Entity(tableName = "word_progress")
 data class WordProgress(
     @PrimaryKey val wordId: Int,

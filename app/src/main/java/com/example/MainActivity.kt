@@ -3,7 +3,6 @@ package com.example
 
 import android.app.Application
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -54,15 +53,14 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
-    private var tts: TextToSpeech? = null
-    private var isTtsReady = false
+class MainActivity : ComponentActivity() {
+    private lateinit var speech: SpeechPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
         // Initialize standard TextToSpeech engine
-        tts = TextToSpeech(this, this)
+        speech = SpeechPlayer(this)
         
         enableEdgeToEdge()
         setContent {
@@ -73,12 +71,10 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             val isDark by viewModel.isDarkTheme.collectAsState()
 
             MyApplicationTheme(darkTheme = isDark) {
-                val context = LocalContext.current
-
                 // TTS trigger collector
                 LaunchedEffect(viewModel.speakEvent) {
                     viewModel.speakEvent.collect { word ->
-                        speak(word, viewModel.pronunciationAccent.value, viewModel.pronunciationSpeed.value)
+                        speech.play(word, viewModel.pronunciationAccent.value, viewModel.pronunciationSpeed.value)
                     }
                 }
 
@@ -92,26 +88,13 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            val result = tts?.setLanguage(Locale.US)
-            if (result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED) {
-                isTtsReady = true
-            }
-        }
-    }
-
-    fun speak(text: String, accent: String = "US", speed: Float = 1.0f) {
-        if (isTtsReady) {
-            tts?.setLanguage(if (accent == "UK") Locale.UK else Locale.US)
-            tts?.setSpeechRate(speed)
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "lexiflow_tts")
-        }
+    override fun onStop() {
+        speech.stop()
+        super.onStop()
     }
 
     override fun onDestroy() {
-        tts?.stop()
-        tts?.shutdown()
+        speech.close()
         super.onDestroy()
     }
 }
@@ -119,7 +102,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 // Global text sentence masker
 fun maskSentence(sentence: String, target: String): String {
     if (sentence.isEmpty() || target.isEmpty()) return sentence
-    val regex = "\\b${target}(?:ing|ed|s|es)?\\b".toRegex(RegexOption.IGNORE_CASE)
+    val regex = "\\b${Regex.escape(target)}(?:ing|ed|s|es)?\\b".toRegex(RegexOption.IGNORE_CASE)
     return sentence.replace(regex, "_______")
 }
 
@@ -144,7 +127,7 @@ fun MainScreen(viewModel: QwertyViewModel) {
             .focusRequester(focusRequester)
             .focusable()
             .onKeyEvent { keyEvent ->
-                if (keyEvent.type == KeyEventType.KeyDown) {
+                if (screenState == ScreenState.TYPING_ARENA && viewModel.activeMode.value in listOf(GameMode.TYPING, GameMode.DICTATION) && keyEvent.type == KeyEventType.KeyDown) {
                     val codePoint = keyEvent.utf16CodePoint
                     if (codePoint > 0) {
                         val char = codePoint.toChar()
@@ -179,6 +162,8 @@ fun MainScreen(viewModel: QwertyViewModel) {
                         ScreenState.ONBOARDING -> OnboardingScreen(viewModel)
                         ScreenState.DASHBOARD -> DashboardScreen(viewModel)
                         ScreenState.PRACTICE_PREVIEW -> PracticePreviewScreen(viewModel)
+                        ScreenState.EXAM_PRACTICE -> ExamPracticeScreen(viewModel.selectedCategory.value, viewModel::speakWord,
+                            exit = { viewModel.setScreen(ScreenState.DASHBOARD) })
                         ScreenState.TYPING_ARENA -> TypingArenaScreen(viewModel)
                         ScreenState.MISTAKES_BOOK -> MistakesBookScreen(viewModel)
                         ScreenState.WORD_BOOK_EXPLORER -> WordBookExplorerScreen(viewModel)
@@ -201,6 +186,7 @@ fun AppHeader(viewModel: QwertyViewModel) {
         ScreenState.ONBOARDING -> "首次使用引导"
         ScreenState.DASHBOARD -> "词流 LexiFlow"
         ScreenState.PRACTICE_PREVIEW -> "配置练习计划"
+        ScreenState.EXAM_PRACTICE -> "备考练习"
         ScreenState.TYPING_ARENA -> "学而时习之"
         ScreenState.MISTAKES_BOOK -> "错词本"
         ScreenState.WORD_BOOK_EXPLORER -> "词书探索"
@@ -456,8 +442,9 @@ fun DashboardScreen(viewModel: QwertyViewModel) {
     val dueWrong = plan.second
     val dueCorrect = plan.third
 
-    val totalCount = allWords.filter { it.word.category.equals(category, ignoreCase = true) }.size
-    val learnedCount = allWords.filter { it.word.category.equals(category, ignoreCase = true) && it.progress != null }.size
+    val book = allWords.filter { it.word.belongsTo(category) }
+    val totalCount = book.size
+    val learnedCount = book.count { it.progress != null }
     val progressPercent = if (totalCount > 0) (learnedCount.toFloat() / totalCount) else 0f
 
     LazyColumn(
@@ -495,6 +482,12 @@ fun DashboardScreen(viewModel: QwertyViewModel) {
                         modifier = Modifier.padding(start = 12.dp)
                     )
                 }
+            }
+        }
+
+        item {
+            FilledTonalButton(onClick = { viewModel.setScreen(ScreenState.EXAM_PRACTICE) }, modifier = Modifier.fillMaxWidth()) {
+                Text("四六级 · 雅思备考练习")
             }
         }
 
@@ -891,7 +884,7 @@ fun TypingArenaScreen(viewModel: QwertyViewModel) {
                                 )
                             } else {
                                 IconButton(
-                                    onClick = { viewModel.triggerSpeakForCurrentWord() },
+                                    onClick = { viewModel.triggerSpeakForCurrentWord(manual = true) },
                                     modifier = Modifier.size(72.dp)
                                 ) {
                                     Icon(
@@ -915,7 +908,7 @@ fun TypingArenaScreen(viewModel: QwertyViewModel) {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     IconButton(
-                                        onClick = { viewModel.triggerSpeakForCurrentWord() },
+                                        onClick = { viewModel.triggerSpeakForCurrentWord(manual = true) },
                                         modifier = Modifier.size(24.dp)
                                     ) {
                                         Icon(
@@ -1064,6 +1057,7 @@ fun TypingArenaScreen(viewModel: QwertyViewModel) {
                                     style = MaterialTheme.typography.bodyMedium,
                                     textAlign = TextAlign.Center
                                 )
+                                TextButton(onClick = { viewModel.speakWord(currentWord.exampleSentence) }) { Text("朗读例句") }
                                 Text(
                                     currentWord.exampleTranslation,
                                     style = MaterialTheme.typography.bodySmall,

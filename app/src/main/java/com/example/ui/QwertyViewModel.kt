@@ -19,6 +19,7 @@ enum class ScreenState {
     ONBOARDING,
     DASHBOARD,
     PRACTICE_PREVIEW,
+    EXAM_PRACTICE,
     TYPING_ARENA,
     MISTAKES_BOOK,
     WORD_BOOK_EXPLORER,
@@ -142,7 +143,7 @@ class QwertyViewModel(
                 Pair("She managed to remember the spelling of [word] easily.", "她很轻松地记住了 [word] 的拼写。"),
                 Pair("This article explains how to use [word] in daily conversation.", "这篇文章解释了如何在日常对话中使用 [word] 这个词。")
             )
-            val index = Math.abs(word.word.hashCode()) % templates.size
+            val index = Math.floorMod(word.word.hashCode(), templates.size)
             val selectedTemplate = templates[index]
             val sentence = selectedTemplate.first.replace("[word]", word.word)
             val translation = selectedTemplate.second.replace("[word]", word.word)
@@ -203,11 +204,12 @@ class QwertyViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Computed smart list values for the Personalized Study Planner
-    val smartTodayPlan = allWordsWithProgress.map { list ->
+    val smartTodayPlan = combine(allWordsWithProgress, _selectedCategory) { list, category ->
         val now = System.currentTimeMillis()
         
         // Split reviews into due incorrect (error history / low memory level) and due correct
-        val dueReviews = list.filter { 
+        val book = list.filter { it.word.belongsTo(category) }
+        val dueReviews = book.filter {
             it.progress != null && it.progress.nextReviewTime <= now
         }
         
@@ -220,7 +222,7 @@ class QwertyViewModel(
         }.sortedBy { it.progress!!.nextReviewTime }
 
         // Unlearned words
-        val unlearnedNew = list.filter { 
+        val unlearnedNew = book.filter {
             it.progress == null
         }
 
@@ -338,17 +340,17 @@ class QwertyViewModel(
 
             if (usePersonalizedPlan) {
                 // Priority 1: Due Wrong reviews
-                val wrongTake = dueWrong.take(dailyReviewTarget.value / 2)
+                val wrongTake = dueWrong.take((dailyReviewTarget.value / 2).coerceIn(0, totalLimit))
                 queue.addAll(wrongTake)
                 wrongAdded = wrongTake.size
 
                 // Priority 2: Due Correct reviews
-                val correctTake = dueCorrect.take(dailyReviewTarget.value - wrongAdded)
+                val correctTake = dueCorrect.take((dailyReviewTarget.value - wrongAdded).coerceIn(0, totalLimit - wrongAdded))
                 queue.addAll(correctTake)
                 correctAdded = correctTake.size
 
                 // Priority 3: New words (up to target)
-                val newTake = unlearned.take(dailyNewWordsTarget.value)
+                val newTake = unlearned.take(dailyNewWordsTarget.value.coerceIn(0, totalLimit - queue.size))
                 queue.addAll(newTake)
                 newAdded = newTake.size
             } else {
@@ -397,7 +399,7 @@ class QwertyViewModel(
             _activeMode.value = mode
 
             if (mode == GameMode.MATCHING) {
-                val subset = queue.take(4)
+                val subset = queue.distinctBy { it.word.translation }.take(4)
                 val leftWords = subset.map { it.word.word }
                 val rightTranslations = subset.map { it.word.translation }.shuffled()
 
@@ -528,6 +530,7 @@ class QwertyViewModel(
         val state = _typingState.value
         val wordData = currentWord ?: return
         
+        if (state.isCompleted || !state.isAnswerRevealed || state.chosenQuality != null) return
         // Quality conversions:
         // Forgot = 1 (fails review)
         // Hard = 3 (passes, stability grows slightly)
@@ -541,6 +544,7 @@ class QwertyViewModel(
             else -> 4
         }
 
+        _typingState.value = state.copy(chosenQuality = quality)
         viewModelScope.launch {
             repository.saveProgress(wordData.id, quality)
 
@@ -670,11 +674,10 @@ class QwertyViewModel(
         val wordData = currentWord ?: return
         viewModelScope.launch {
             val allWords = repository.allWordsWithProgress.first().map { it.word }
-            val distractors = allWords
-                .filter { it.translation != wordData.translation }
+            val distractors = allWords.map { it.translation }.distinct()
+                .filter { it != wordData.translation }
                 .shuffled()
                 .take(3)
-                .map { it.translation }
 
             val mergedChoices = (distractors + wordData.translation).shuffled()
             _typingState.value = _typingState.value.copy(
@@ -762,8 +765,8 @@ class QwertyViewModel(
         return prefs.getInt("streak_count", 0)
     }
 
-    fun triggerSpeakForCurrentWord() {
-        if (!isSoundEnabled.value) return
+    fun triggerSpeakForCurrentWord(manual: Boolean = false) {
+        if (!manual && !isSoundEnabled.value) return
         currentWord?.let {
             viewModelScope.launch {
                 _speakEvent.emit(it.word)

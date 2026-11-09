@@ -1,0 +1,13 @@
+**
+!Dockerfile
+!server/
+!server/*.py
+!app/src/main/assets/exam_questions.json
+!app/
+!app/src/
+!app/src/main/
+!app/src/main/assets/
+!app/src/main/assets/dicts/
+!app/src/main/assets/dicts/cet4.json
+!app/src/main/assets/dicts/cet6.json
+!app/src/main/assets/dicts/ielts.json

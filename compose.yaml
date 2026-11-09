@@ -1,0 +1,14 @@
+services:
+  api:
+    image: lexiflow-api:1.0
+    build: .
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - questions:/data
+    environment:
+      QUESTION_FEED_URL: ${QUESTION_FEED_URL:-https://raw.githubusercontent.com/MoChen-5678/LexiFlow/main/app/src/main/assets/exam_questions.json}
+      UPDATE_HOURS: ${UPDATE_HOURS:-24}
+volumes:
+  questions:

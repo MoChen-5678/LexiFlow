@@ -48,6 +48,15 @@ interface WordDao {
     @Query("DELETE FROM word_progress")
     suspend fun clearAllProgress()
 
+    @Query("DELETE FROM typing_sessions")
+    suspend fun clearSessions()
+
+    @Transaction
+    suspend fun clearStudyHistory() {
+        clearAllProgress()
+        clearSessions()
+    }
+
     @Query("SELECT * FROM typing_sessions ORDER BY timestamp DESC")
     fun getAllSessions(): Flow<List<TypingSession>>
 

@@ -1,6 +1,7 @@
 package com.example.data
 
 import android.content.Context
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.Flow
 import org.json.JSONArray
 import java.io.BufferedReader
@@ -16,7 +17,13 @@ class WordRepository(private val wordDao: WordDao) {
         return wordDao.getWordsWithProgressByCategory(category)
     }
 
-    suspend fun ensureWordsPopulated(context: Context) {
+    private val populateLock = kotlinx.coroutines.sync.Mutex()
+
+    suspend fun ensureWordsPopulated(context: Context) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        populateLock.withLock { populateWords(context) }
+    }
+
+    private suspend fun populateWords(context: Context) {
         if (wordDao.getWordCount() > 0) return // Already populated with rich dicts
 
         val filenames = listOf("cet4.json", "cet6.json", "ielts.json", "toefl.json", "coder.json")
@@ -171,8 +178,7 @@ class WordRepository(private val wordDao: WordDao) {
             memoryLevel = 1 // Falls back to initial review level
         }
 
-        // Spaced repetition interval in milliseconds (each interval day = 2 minutes for high real-time responsiveness)
-        val intervalMs = intervalDays * 120 * 1000L
+        val intervalMs = java.util.concurrent.TimeUnit.DAYS.toMillis(intervalDays.toLong())
         val nextReviewTime = System.currentTimeMillis() + intervalMs
 
         val isMastered = memoryLevel == 5 || (correct >= 4 && wrong <= 1)
@@ -202,6 +208,6 @@ class WordRepository(private val wordDao: WordDao) {
     }
 
     suspend fun clearProgress() {
-        wordDao.clearAllProgress()
+        wordDao.clearStudyHistory()
     }
 }

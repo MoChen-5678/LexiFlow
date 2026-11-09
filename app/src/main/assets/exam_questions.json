@@ -1,0 +1,212 @@
+[
+  {
+    "id": "cet4-reading-1",
+    "exam": "cet4",
+    "kind": "reading",
+    "prompt": "The library will close its main reading room on Friday for repairs. Students can still borrow books at the ground-floor desk. Which service is available on Friday?",
+    "choices": [
+      "Borrowing books",
+      "Using the main reading room",
+      "Booking the main room"
+    ],
+    "answer": "Borrowing books",
+    "explanation": "一楼服务台仍办理借书，周五关闭的是主阅览室。",
+    "speech": ""
+  },
+  {
+    "id": "cet4-reading-2",
+    "exam": "cet4",
+    "kind": "reading",
+    "prompt": "Li usually cycles to class. When her bicycle broke down, she took the bus for a week. Why did she change how she travelled?",
+    "choices": [
+      "Her bicycle needed repair",
+      "The campus moved",
+      "The bus was faster"
+    ],
+    "answer": "Her bicycle needed repair",
+    "explanation": "broke down 指自行车出了故障。",
+    "speech": ""
+  },
+  {
+    "id": "cet4-listening-3",
+    "exam": "cet4",
+    "kind": "listening",
+    "prompt": "听校园通知，选择新的集合地点。",
+    "choices": [
+      "Outside the library",
+      "At the sports hall",
+      "At the station"
+    ],
+    "answer": "At the sports hall",
+    "explanation": "通知先提到原定地点，随后用 instead 给出新的地点。",
+    "speech": "We planned to meet outside the library. Because of the rain, please meet at the sports hall instead."
+  },
+  {
+    "id": "cet4-cloze-4",
+    "exam": "cet4",
+    "kind": "cloze",
+    "prompt": "Please ___ your seat online before the talk.（预订）",
+    "choices": [],
+    "answer": "reserve",
+    "explanation": "reserve a seat 表示预订座位。",
+    "speech": "Please reserve your seat online before the talk."
+  },
+  {
+    "id": "cet6-reading-5",
+    "exam": "cet6",
+    "kind": "reading",
+    "prompt": "A city installed more cycle lanes and recorded fewer car journeys the following year. During the same period, fuel prices rose sharply. What limits the city's conclusion about the lanes?",
+    "choices": [
+      "Another factor could explain the decline",
+      "Fuel prices stayed constant",
+      "Cycle lanes were removed"
+    ],
+    "answer": "Another factor could explain the decline",
+    "explanation": "油价同期上涨，也可能减少驾车出行。",
+    "speech": ""
+  },
+  {
+    "id": "cet6-listening-6",
+    "exam": "cet6",
+    "kind": "listening",
+    "prompt": "听研究人员介绍，选择他们改变调查方法的原因。",
+    "choices": [
+      "The first sample missed night workers",
+      "The survey took too long",
+      "The responses were anonymous"
+    ],
+    "answer": "The first sample missed night workers",
+    "explanation": "原来的日间访谈遗漏了夜班工人。",
+    "speech": "Our first interviews all took place during the day. As a result, night workers rarely took part. We therefore added evening sessions."
+  },
+  {
+    "id": "cet6-cloze-7",
+    "exam": "cet6",
+    "kind": "cloze",
+    "prompt": "The researchers could not ___ the difference to age alone.（归因于，首字母 a）",
+    "choices": [],
+    "answer": "attribute",
+    "explanation": "attribute A to B 表示把 A 归因于 B。",
+    "speech": "The researchers could not attribute the difference to age alone."
+  },
+  {
+    "id": "ielts-reading-8",
+    "exam": "ielts",
+    "kind": "reading",
+    "prompt": "The pilot scheme waived fares for residents aged over 65. Visitors of the same age continued to pay the standard fare. Statement: All passengers over 65 travelled free during the pilot.",
+    "choices": [
+      "True",
+      "False",
+      "Not Given"
+    ],
+    "answer": "False",
+    "explanation": "免费乘车仅限符合年龄条件的居民，访客仍要付费。",
+    "speech": ""
+  },
+  {
+    "id": "ielts-reading-9",
+    "exam": "ielts",
+    "kind": "reading",
+    "prompt": "A report says that the wetland reopened in May after paths were repaired. It gives no visitor totals. Statement: More people visited in May than in April.",
+    "choices": [
+      "True",
+      "False",
+      "Not Given"
+    ],
+    "answer": "Not Given",
+    "explanation": "材料给出了开放时间，没有给出两个月的访客人数。",
+    "speech": ""
+  },
+  {
+    "id": "ielts-listening-10",
+    "exam": "ielts",
+    "kind": "listening",
+    "prompt": "听预约信息，用一个英文单词填写最终预约的星期。",
+    "choices": [],
+    "answer": "Thursday",
+    "explanation": "说话人先提到 Tuesday，再将预约改到 Thursday。",
+    "speech": "I originally booked the room for Tuesday, but our lecturer is away then. Could you move the booking to Thursday at the same time?"
+  },
+  {
+    "id": "ielts-cloze-11",
+    "exam": "ielts",
+    "kind": "cloze",
+    "prompt": "The treatment plant removes harmful chemicals before the water reaches the river. Complete the summary with ONE WORD from the passage: The plant removes harmful ___.",
+    "choices": [],
+    "answer": "chemicals",
+    "explanation": "原文中 harmful 修饰 chemicals。",
+    "speech": "The plant removes harmful chemicals before the water reaches the river."
+  },
+  {
+    "id": "cet4-vocabulary-intro",
+    "exam": "cet4",
+    "kind": "vocabulary",
+    "prompt": "receipt 的中文释义是什么？",
+    "choices": [
+      "收据",
+      "日程",
+      "座位"
+    ],
+    "answer": "收据",
+    "explanation": "receipt — 收据",
+    "speech": "receipt"
+  },
+  {
+    "id": "cet4-dictation-intro",
+    "exam": "cet4",
+    "kind": "dictation",
+    "prompt": "听音频，写出英文。",
+    "choices": [],
+    "answer": "receipt",
+    "explanation": "receipt — 收据",
+    "speech": "receipt"
+  },
+  {
+    "id": "cet6-vocabulary-intro",
+    "exam": "cet6",
+    "kind": "vocabulary",
+    "prompt": "allocate 的中文释义是什么？",
+    "choices": [
+      "推迟",
+      "分配",
+      "核实"
+    ],
+    "answer": "分配",
+    "explanation": "allocate — 分配",
+    "speech": "allocate"
+  },
+  {
+    "id": "cet6-dictation-intro",
+    "exam": "cet6",
+    "kind": "dictation",
+    "prompt": "听音频，写出英文。",
+    "choices": [],
+    "answer": "allocate",
+    "explanation": "allocate — 分配",
+    "speech": "allocate"
+  },
+  {
+    "id": "ielts-vocabulary-intro",
+    "exam": "ielts",
+    "kind": "vocabulary",
+    "prompt": "habitat 的中文释义是什么？",
+    "choices": [
+      "样本",
+      "海拔",
+      "栖息地"
+    ],
+    "answer": "栖息地",
+    "explanation": "habitat — 栖息地",
+    "speech": "habitat"
+  },
+  {
+    "id": "ielts-dictation-intro",
+    "exam": "ielts",
+    "kind": "dictation",
+    "prompt": "听音频，写出英文。",
+    "choices": [],
+    "answer": "habitat",
+    "explanation": "habitat — 栖息地",
+    "speech": "habitat"
+  }
+]
