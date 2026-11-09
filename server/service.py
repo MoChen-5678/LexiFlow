@@ -54,7 +54,7 @@ def refresh():
                 canonical = "https://raw.githubusercontent.com/MoChen-5678/LexiFlow/main/app/src/main/assets/exam_questions.json"
                 if exc.code != 404 or FEED != canonical:
                     raise
-                import_feed(canonical.replace("/main/", "/codex/exam-practice/"))
+                import_feed(canonical.replace("/main/", "/codex/exam-practice/", 1))
             status = {"source": "ok", "last_success": datetime.now(timezone.utc).isoformat()}
         except Exception as exc:
             logging.warning("Question refresh failed: %s", exc)
