@@ -1,4 +1,5 @@
 import io
+import os
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -8,6 +9,22 @@ from tencent_tts import signed_request, synthesize
 
 
 class SpeechTest(unittest.TestCase):
+    def test_tencent_is_default_and_signed_requests_use_cloud_and_cache(self):
+        with tempfile.TemporaryDirectory() as root, patch.dict(os.environ, {}, clear=True):
+            engine = Speech(str(Path(root) / "db.sqlite3"), cache=Path(root) / "cache")
+            self.assertEqual(engine.status()["provider"], "tencent")
+            self.assertEqual(engine.status()["voices"]["US"], {"female": "403006", "male": "403007"})
+            with patch("speech.credentials", return_value=("id", "secret")), \
+                 patch("speech.cloud_synthesize", return_value=b"MP3" * 100) as cloud, \
+                 patch.object(engine, "local") as local:
+                first = engine.audio("At 9:30", "US", "female", cloud_allowed=True)
+                self.assertEqual(first, engine.audio("At 9:30", "US", "female", cloud_allowed=True))
+                self.assertEqual(first[1:], ("audio/mpeg", "tencent"))
+                cloud.assert_called_once_with("At 9:30", 403006, "id", "secret")
+                engine.audio("At 9:30", "US", "male", cloud_allowed=True)
+                self.assertEqual(cloud.call_args.args[1], 403007)
+                local.assert_not_called()
+
     def test_cache_and_cloud_failure_use_local_neural_voice(self):
         with tempfile.TemporaryDirectory() as root:
             engine = Speech(str(Path(root) / "db.sqlite3"), cache=Path(root) / "cache")

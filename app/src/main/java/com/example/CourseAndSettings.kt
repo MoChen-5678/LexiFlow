@@ -249,7 +249,7 @@ internal fun PreferencesScreen(viewModel: QwertyViewModel) {
         item { ActionRow("设置备份", "导出或恢复学习偏好", Icons.Outlined.SaveAlt, {
             backup = true; message = ""
         }) }
-        item { Text("LexiFlow · 1.4", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        item { Text("LexiFlow · 1.4.1", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
     if (backup) AlertDialog(onDismissRequest = { backup = false }, title = { Text("设置备份") }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

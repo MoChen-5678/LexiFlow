@@ -23,15 +23,20 @@ class Speech:
         self.lock = threading.Lock()
         self.cache_lock = threading.RLock()
         self.engine = None
-        self.provider = os.environ.get("TTS_PROVIDER", "kokoro")
+        self.provider = os.environ.get("TTS_PROVIDER", "tencent")
         if self.provider not in ("kokoro", "tencent"):
             raise ValueError("invalid speech provider")
         with closing(sqlite3.connect(db_path)) as db, db:
             db.execute("CREATE TABLE IF NOT EXISTS tts_usage (day TEXT PRIMARY KEY, chars INTEGER)")
 
     def status(self):
+        voices = {accent: dict(values) for accent, values in VOICES_TO_JSON.items()}
+        if self.provider == "tencent":
+            voices["US"] = {"female": os.environ.get("TENCENT_VOICE_FEMALE", "403006"),
+                            "male": os.environ.get("TENCENT_VOICE_MALE", "403007")}
         return dict(provider=self.provider, ready=self.engine is not None,
-                    accents=["US", "UK"], voices=VOICES_TO_JSON)
+                    accents=["US", "UK"], voices=voices, fallback_provider="kokoro",
+                    cloud_requires_study_code=self.provider == "tencent")
 
     def warm(self):
         try:

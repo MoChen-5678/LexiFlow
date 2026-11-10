@@ -1,5 +1,18 @@
 # LexiFlow
 
+## 1.4.1 默认腾讯云语音
+
+服务端、Docker 镜像和 Compose 默认优先使用腾讯云 TTS。App 1.4.1 更换自然语音缓存目录，升级后会重新获取声音，学习记录保持不变。
+
+将自己的 `SecretKey.csv` 放在部署目录，或通过 `TENCENT_CSV_PATH` 指定私有文件路径，然后运行 `sh deploy.sh`。Compose 将密钥以只读 secret 挂载到服务器；密钥不随安装包、镜像或仓库分发。App 填写个人学习码后，美式男女声优先请求腾讯云。英式、未签名请求、云服务失败或达到每日字符上限时使用本地 Kokoro 自然声。
+
+```sh
+export TENCENT_CSV_PATH=/absolute/private/SecretKey.csv
+sh deploy.sh
+```
+
+若不使用云语音，可设置 `TTS_PROVIDER=kokoro`，或直接以该环境变量运行镜像。每日云合成字符上限默认 20,000，可通过 `TTS_DAILY_CHAR_LIMIT` 调整。`/api/audio/status` 显示配置的默认引擎与音色；实际响应的 `X-Speech-Engine` 表示本次合成所用引擎。本次已在 WSL Ubuntu 使用实际密钥和签名请求完成腾讯云美式女声、男声合成。首次请求分别约 4.45 秒、2.54 秒，返回可解码的 24 kHz MP3。密钥通过只读挂载提供。
+
 LexiFlow 是 Android 背词和备考应用。首页的「四六级 · 雅思备考练习」提供四级、六级和雅思的阅读、听力、填空、词义和听写。提交后可查看答案与解析，完成一组后可查看成绩。断网时，App 使用上次下载的同类题组或内置练习。
 
 
@@ -25,17 +38,17 @@ LexiFlow 是 Android 背词和备考应用。首页的「四六级 · 雅思备�
 
 `GET /api/vocabulary` 返回词表版本、数量、上次检查与状态。`GET /api/vocabulary/{book}?version={sha256}` 下载对应词表，版本变更返回 409。App 刷新只读取已发布词表，不会额外触发上游检查。上游没有新内容时不会虚构新增词。
 
-默认自然语音采用本机 CPU 运行的 Kokoro-82M，支持美式女声/男声、英式女声/男声。镜像包含模型，运行时无需下载模型或调用付费 API。服务器和 App 分别缓存音频，语速在 App 播放时调整。`/api/audio/status` 可查看引擎与音色。长文按英语文本分段，数字使用所选英语口音处理。关闭设置中的「优先自然发音」可优先使用原离线包。
+默认自然语音优先采用腾讯云美式女声/男声；英式男女声及云服务不可用时采用本机 CPU 运行的 Kokoro-82M。镜像包含回退模型，运行时无需下载模型。服务器和 App 分别缓存音频，语速在 App 播放时调整。`/api/audio/status` 可查看引擎与音色。长文按英语文本分段，数字使用所选英语口音处理。关闭设置中的「优先自然发音」可优先使用原离线包。
 
 WSL 实测：包含时刻、日期、金额的四种语音均生成可解码的 24 kHz WAV，约 10 秒音频首次生成用时 4–6 秒，服务端缓存命中约 0.2 毫秒。首次预热也需要数秒。内存与耗时取决于服务器配置，推荐至少 2 核、2 GB 内存。测试使用 linux/amd64 镜像，未做 Android 真机试听。
 
-腾讯云作为可选服务端方案保留。当前环境连接官方接入点超时，尚未取得腾讯云音频样本，因此默认部署使用已完成合成测试的 Kokoro。腾讯云接口、音色与签名参考 [基础语音合成文档](https://cloud.tencent.com/document/product/1073/37995) 和 [TC3 签名文档](https://cloud.tencent.com/document/api/213/30654)。提供的 Android SDK 不需要安装到 APK。
+腾讯云现为默认服务端方案。本次 WSL 测试已成功取得腾讯云男女声音频并完成解码检查；接口失败时仍回退到 Kokoro。腾讯云接口、音色与签名参考 [基础语音合成文档](https://cloud.tencent.com/document/product/1073/37995) 和 [TC3 签名文档](https://cloud.tencent.com/document/api/213/30654)。提供的 Android SDK 不需要安装到 APK。
 
-如需启用腾讯云，把 CSV 放在服务器的私有目录，通过运行时只读 secret 挂载：
+把 CSV 放在服务器的私有目录，通过默认 Compose 配置在运行时只读挂载：
 
 ```sh
 export TENCENT_CSV_PATH=/absolute/private/SecretKey.csv
-docker compose -p lexiflow -f compose.yaml -f compose.tencent.yaml up -d --no-build --wait
+docker compose -p lexiflow up -d --no-build --wait
 ```
 
 云语音需要 App 已填写个人学习码并对请求签名，默认每天最多提交 20,000 字符，避免公开接口产生任意调用费用。当前云音色配置为美式男女声，英式继续使用 Kokoro。密钥缺失、限额或接口失败时回退到本地自然语音。CSV 仅由服务器读取，镜像、Git 和 APK 均不附带密钥。
@@ -44,7 +57,7 @@ docker compose -p lexiflow -f compose.yaml -f compose.tencent.yaml up -d --no-bu
 
 ## 运行题库服务
 
-在包含 `compose.yaml` 的目录运行以下命令，首次部署会构建镜像。
+在包含 `compose.yaml` 的目录准备好 `SecretKey.csv`，或设置 `TENCENT_CSV_PATH` 后运行以下命令，首次部署会构建镜像。
 
 ```sh
 docker compose up -d --build
@@ -54,8 +67,8 @@ curl http://127.0.0.1:5000/health
 离线部署包内含镜像、Compose 配置和启动脚本。解压后运行 `sh deploy.sh` 即可加载镜像、启动服务并等待健康检查通过。也可以手动加载镜像并运行独立容器。
 
 ```sh
-docker load -i lexiflow-api-1.4.tar.gz
-docker run -d --name lexiflow-api --restart unless-stopped -p 5000:5000 -v lexiflow-questions:/data lexiflow-api:1.4
+docker load -i lexiflow-api-1.4.1.tar.gz
+docker run -d --name lexiflow-api --restart unless-stopped -p 5000:5000 -v lexiflow-questions:/data --mount type=bind,source=/absolute/private/SecretKey.csv,target=/run/secrets/tencent.csv,readonly lexiflow-api:1.4.1
 ```
 
 服务监听 TCP 5000，仅返回 JSON 或音频。根路径返回 JSON 404。SQLite 题库保存在数据卷中，更新镜像时使用原来的数据卷。App 默认连接 `47.109.146.2:5000`，学习界面不显示地址。公网端口是否可达取决于主机防火墙和云安全组设置。
@@ -104,7 +117,7 @@ Git 版本查询优先通过 GH-Proxy，失败时切换到 ghfast。试卷和词
 
 朗读可选择英式、美式口音及男声、女声，默认优先获取服务器自然语音。音频在 App 缓存后可离线重听。首次获取失败时会提示并尝试 APK 原有离线发音。长文章分段朗读。中文界面说明不参与英文朗读。设置中的「试听」播放当前声音。
 
-听写和拼写练习参考 [Qwerty Learner](https://github.com/RealKai42/qwerty-learner)。APK 的原有离线回退发音使用 [eSpeak NG](https://github.com/espeak-ng/espeak-ng)。服务端默认使用 Kokoro 自然语音。在安装 eSpeak NG 和 libmp3lame 的 Linux 环境下，可用 `scripts/build-pronunciations.py` 重新生成音频包，两个参数分别为 App 的 assets 目录和 audio 输出目录。
+听写和拼写练习参考 [Qwerty Learner](https://github.com/RealKai42/qwerty-learner)。APK 的原有离线回退发音使用 [eSpeak NG](https://github.com/espeak-ng/espeak-ng)。服务端默认优先使用腾讯云，Kokoro 提供本地自然语音回退。在安装 eSpeak NG 和 libmp3lame 的 Linux 环境下，可用 `scripts/build-pronunciations.py` 重新生成音频包，两个参数分别为 App 的 assets 目录和 audio 输出目录。
 
 
 ## 1.2 练习内容

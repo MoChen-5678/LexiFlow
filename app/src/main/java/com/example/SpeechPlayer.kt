@@ -20,7 +20,7 @@ internal class SpeechPlayer(private val context: Context) {
     private var player: MediaPlayer? = null
     private var closed = false
     private val downloads = java.util.concurrent.Executors.newSingleThreadExecutor()
-    private val cache = java.io.File(context.cacheDir, "natural-speech-v1").apply { mkdirs() }
+    private val cache = java.io.File(context.cacheDir, "natural-speech-v2").apply { mkdirs() }
     private var download: java.util.concurrent.Future<*>? = null
 
     fun play(text: String, accent: String, speed: Float, gender: String = "female") {

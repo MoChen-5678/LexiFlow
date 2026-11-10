@@ -22,7 +22,7 @@ COPY app/src/main/assets/exam_frequency.json app/src/main/assets/vocabulary_sour
 COPY licenses /app/licenses
 RUN install -d -o 10001 -g 10001 /data
 USER 10001:10001
-ENV LEXIFLOW_DB=/data/questions.sqlite3 PYTHONDONTWRITEBYTECODE=1 ORT_DISABLE_TELEMETRY=1 TTS_THREADS=2
+ENV LEXIFLOW_DB=/data/questions.sqlite3 PYTHONDONTWRITEBYTECODE=1 ORT_DISABLE_TELEMETRY=1 TTS_THREADS=2 TTS_PROVIDER=tencent TENCENT_CREDENTIALS_FILE=/run/secrets/tencent.csv
 EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health',timeout=3).read()"
 CMD ["python","-m","gunicorn","--bind","0.0.0.0:5000","--workers","1","--threads","8","--timeout","90","service:app"]

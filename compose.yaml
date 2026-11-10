@@ -1,6 +1,6 @@
 services:
   api:
-    image: lexiflow-api:1.4
+    image: lexiflow-api:1.4.1
     build: .
     restart: unless-stopped
     ports:
@@ -13,7 +13,16 @@ services:
       CET_PAST_BRANCH: ${CET_PAST_BRANCH:-master}
       IELTS_RECALL_REPO: ${IELTS_RECALL_REPO:-eugenewang5425/ielts-corpus-lab}
       IELTS_RECALL_BRANCH: ${IELTS_RECALL_BRANCH:-main}
-      TTS_PROVIDER: ${TTS_PROVIDER:-kokoro}
+      TTS_PROVIDER: ${TTS_PROVIDER:-tencent}
+      TENCENT_CREDENTIALS_FILE: /run/secrets/tencent.csv
+      TENCENT_TTS_HOST: ${TENCENT_TTS_HOST:-tts.tencentcloudapi.com}
+      TTS_DAILY_CHAR_LIMIT: ${TTS_DAILY_CHAR_LIMIT:-20000}
       TTS_THREADS: ${TTS_THREADS:-2}
+    secrets:
+      - source: tencent
+        target: tencent.csv
 volumes:
   questions:
+secrets:
+  tencent:
+    file: ${TENCENT_CSV_PATH:-./SecretKey.csv}

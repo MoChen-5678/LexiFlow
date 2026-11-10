@@ -1,4 +1,4 @@
-# Optional: the CSV stays on the host and is mounted read-only at runtime.
+# Compatibility override; Tencent is also the default in compose.yaml.
 services:
   api:
     environment:
@@ -7,7 +7,8 @@ services:
       TENCENT_TTS_HOST: ${TENCENT_TTS_HOST:-tts.tencentcloudapi.com}
       TTS_DAILY_CHAR_LIMIT: ${TTS_DAILY_CHAR_LIMIT:-20000}
     secrets:
-      - tencent
+      - source: tencent
+        target: tencent.csv
 secrets:
   tencent:
-    file: ${TENCENT_CSV_PATH:?Set TENCENT_CSV_PATH to the private SecretKey.csv path}
+    file: ${TENCENT_CSV_PATH:-./SecretKey.csv}
