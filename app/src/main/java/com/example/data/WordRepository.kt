@@ -4,11 +4,9 @@ import android.content.Context
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.Flow
 import org.json.JSONArray
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import kotlin.math.roundToInt
 
-class WordRepository(private val wordDao: WordDao) {
+class WordRepository(private val wordDao: WordDao, private val networkFetch: ((String) -> String)? = null) {
 
     val allSessions: Flow<List<TypingSession>> = wordDao.getAllSessions()
     val allWordsWithProgress: Flow<List<WordWithProgress>> = wordDao.getAllWordsWithProgress()
@@ -23,86 +21,85 @@ class WordRepository(private val wordDao: WordDao) {
         populateLock.withLock { populateWords(context) }
     }
 
+    val vocabularyStatus = kotlinx.coroutines.flow.MutableStateFlow("等待同步")
+    val vocabularySyncing = kotlinx.coroutines.flow.MutableStateFlow(false)
+
     private suspend fun populateWords(context: Context) {
-        if (wordDao.getWordCount() > 0) return // Already populated with rich dicts
+        val prefs = context.getSharedPreferences("vocabulary_sync", Context.MODE_PRIVATE)
+        if (wordDao.getWordCount() > 0 && prefs.getString("bundled", "") == "1.4-editions") return
+        val words = listOf("cet4", "cet6", "ielts", "toefl", "coder").flatMap { book ->
+            val json = context.assets.open("dicts/$book.json").bufferedReader().use { it.readText() }
+            parseVocabulary(json)
+        }
+        wordDao.mergeVocabulary(words)
+        prefs.edit().putString("bundled", "1.4-editions").putString("versions", "{}").remove("attempt").commit()
+    }
 
-        val filenames = listOf("cet4.json", "cet6.json", "ielts.json", "toefl.json", "coder.json")
-        val uniqueWordsMap = mutableMapOf<String, Word>()
-
-        for (filename in filenames) {
-            val jsonString = try {
-                val inputStream = context.assets.open("dicts/$filename")
-                val reader = BufferedReader(InputStreamReader(inputStream))
-                val sb = StringBuilder()
-                var line: String? = reader.readLine()
-                while (line != null) {
-                    sb.append(line)
-                    line = reader.readLine()
+    suspend fun syncVocabulary(context: Context, force: Boolean = false) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        populateLock.withLock {
+            val prefs = context.getSharedPreferences("vocabulary_sync", Context.MODE_PRIVATE)
+            val now = System.currentTimeMillis()
+            if (!force && now - prefs.getLong("attempt", 0) < 15 * 60 * 1000) return@withLock
+            vocabularySyncing.value = true
+            vocabularyStatus.value = "正在检查词库更新…"
+            prefs.edit().putLong("attempt", now).commit()
+            try {
+                val manifest = org.json.JSONObject(fetchVocabulary("/api/vocabulary")).getJSONObject("books")
+                val versions = org.json.JSONObject(prefs.getString("versions", "{}") ?: "{}")
+                val incoming = mutableListOf<Word>()
+                for (book in listOf("cet4", "cet6", "ielts", "toefl", "coder")) {
+                    val entry = manifest.getJSONObject(book)
+                    val version = entry.getString("version")
+                    require(version.matches(Regex("[a-f0-9]{64}")))
+                    if (versions.optString(book) == version) continue
+                    val body = fetchVocabulary("/api/vocabulary/$book?version=$version")
+                    val hash = java.security.MessageDigest.getInstance("SHA-256").digest(body.toByteArray(Charsets.UTF_8))
+                        .joinToString("") { "%02x".format(it) }
+                    require(hash == version) { "vocabulary checksum mismatch" }
+                    val words = parseVocabulary(body)
+                    require(words.size == entry.getInt("count") && words.size in 100..30000)
+                    require(words.all { word -> word.bookIds.split(",").let { tags ->
+                        book in tags && tags.all { it == book || it == book + "_high" }
+                    } })
+                    incoming.addAll(words)
+                    versions.put(book, version)
                 }
-                reader.close()
-                sb.toString()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-
-            if (jsonString != null) {
-                val jsonArray = JSONArray(jsonString)
-                for (i in 0 until jsonArray.length()) {
-                    val obj = jsonArray.getJSONObject(i)
-                    val wordStr = obj.getString("word").trim()
-                    val key = wordStr.lowercase()
-
-                    val phonetic = obj.optString("phonetic", "")
-                    val translation = obj.optString("translation", "")
-                    val category = obj.optString("category", "")
-                    val bookIds = obj.optString("bookIds", "")
-                    val exampleSentence = obj.optString("exampleSentence", "")
-                    val exampleTranslation = obj.optString("exampleTranslation", "")
-                    val exampleSentenceCloze = obj.optString("exampleSentenceCloze", "")
-                    val examplesJson = obj.optString("examplesJson", "")
-
-                    val existingWord = uniqueWordsMap[key]
-                    if (existingWord != null) {
-                        // Merge bookIds & category
-                        val mergedBookIds = (existingWord.bookIds.split(",") + bookIds.split(","))
-                            .map { it.trim() }
-                            .filter { it.isNotEmpty() }
-                            .distinct()
-                            .joinToString(",")
-
-                        uniqueWordsMap[key] = existingWord.copy(
-                            bookIds = mergedBookIds,
-                            exampleSentence = if (exampleSentence.isNotEmpty()) exampleSentence else existingWord.exampleSentence,
-                            exampleTranslation = if (exampleTranslation.isNotEmpty()) exampleTranslation else existingWord.exampleTranslation,
-                            exampleSentenceCloze = if (exampleSentenceCloze.isNotEmpty()) exampleSentenceCloze else existingWord.exampleSentenceCloze,
-                            examplesJson = if (examplesJson.isNotEmpty()) examplesJson else existingWord.examplesJson
-                        )
-                    } else {
-                        uniqueWordsMap[key] = Word(
-                            word = wordStr,
-                            phonetic = phonetic,
-                            translation = translation,
-                            category = category,
-                            exampleSentence = exampleSentence,
-                            exampleTranslation = exampleTranslation,
-                            bookIds = if (bookIds.isNotEmpty()) bookIds else filename.split(".")[0],
-                            exampleSentenceCloze = exampleSentenceCloze,
-                            examplesJson = examplesJson
-                        )
-                    }
-                }
+                wordDao.mergeVocabulary(incoming)
+                prefs.edit().putString("versions", versions.toString()).putLong("success", now).commit()
+                val count = wordDao.getWordCount()
+                val time = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.CHINA).format(java.util.Date(now))
+                vocabularyStatus.value = "已同步 · $count 词 · $time"
+            } catch (cancel: kotlinx.coroutines.CancellationException) {
+                throw cancel
+            } catch (_: Exception) {
+                vocabularyStatus.value = "暂时无法连接，已保留本地词库，稍后可重试"
+            } finally {
+                vocabularySyncing.value = false
             }
         }
+    }
 
-        if (uniqueWordsMap.isNotEmpty()) {
-            wordDao.insertWords(uniqueWordsMap.values.toList())
-        }
-
-        // Fallback to static DefaultWords if still empty
-        if (wordDao.getWordCount() == 0) {
-            wordDao.insertWords(DefaultWords.list)
-        }
+    private fun fetchVocabulary(path: String): String {
+        networkFetch?.let { return it(path) }
+        val connection = java.net.URL(com.example.BuildConfig.API_BASE + path).openConnection() as java.net.HttpURLConnection
+        try {
+            connection.connectTimeout = 5000
+            connection.readTimeout = 15000
+            require(connection.responseCode == 200)
+            val bytes = connection.inputStream.use { stream ->
+                val out = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val n = stream.read(buffer)
+                    if (n == -1) break
+                    require(out.size() + n <= 12_000_000)
+                    out.write(buffer, 0, n)
+                }
+                out.toByteArray()
+            }
+            require(bytes.size <= 12_000_000)
+            return bytes.toString(Charsets.UTF_8)
+        } finally { connection.disconnect() }
     }
 
     /**
@@ -209,5 +206,18 @@ class WordRepository(private val wordDao: WordDao) {
 
     suspend fun clearProgress() {
         wordDao.clearStudyHistory()
+    }
+}
+
+internal fun parseVocabulary(json: String): List<Word> {
+    val rows = JSONArray(json)
+    require(rows.length() in 1..30000)
+    return (0 until rows.length()).map { index ->
+        val row = rows.getJSONObject(index)
+        val word = row.getString("word").trim()
+        val translation = row.getString("translation").trim()
+        require(word.isNotBlank() && word.length <= 120 && translation.isNotBlank() && translation.length <= 3000)
+        Word(word = word, phonetic = row.optString("phonetic"), translation = translation,
+            category = row.getString("category"), bookIds = row.getString("bookIds"))
     }
 }

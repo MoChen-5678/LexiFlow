@@ -3,7 +3,6 @@ import logging
 from functools import partial
 from contextlib import closing
 import os
-import subprocess
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,15 +14,25 @@ from mirrors import head, read_json
 from schedule import daily, DAY
 from ielts import load_sets, flat_questions
 from bank import Bank, EXAMS, KINDS, daily_questions
+from vocabulary import Vocabulary, FILES
+from speech import Speech
 
 ROOT = Path(__file__).resolve().parent
 IELTS_SETS = load_sets(ROOT / "ielts_sets.json")
 DB = Bank(os.environ.get("LEXIFLOW_DB", "/data/questions.sqlite3"))
 ARCHIVE = Archive(DB.path)
-for repo, branch in SOURCES.items():
-    daily(DB.path, f"past:{repo}:{branch}", partial(ARCHIVE.sync, repo))
 DICTS = Path(os.environ.get("LEXIFLOW_DICTS", ROOT / "dicts"))
+VOCABULARY = Vocabulary(DB.path, DICTS)
+def sync_archive(repo):
+    ARCHIVE.sync(repo)
+    VOCABULARY.refresh_editions()
+
+for repo, branch in SOURCES.items():
+    daily(DB.path, f"past:{repo}:{branch}", partial(sync_archive, repo))
+daily(DB.path, "vocabulary:", VOCABULARY.sync)
 FEED = os.environ.get("QUESTION_FEED_URL", "").strip()
+SPEECH = Speech(DB.path)
+threading.Thread(target=SPEECH.warm, daemon=True, name="speech-warmup").start()
 audio_slots = threading.BoundedSemaphore(2)
 with closing(DB.connect()) as db, db:
     db.execute("CREATE TABLE IF NOT EXISTS feed_status (id INTEGER PRIMARY KEY, state TEXT, last_success TEXT)")
@@ -87,11 +96,11 @@ def deadlines():
 
 
 def app(env, start_response):
-    def send(code, data, mime="application/json; charset=utf-8"):
+    def send(code, data, mime="application/json; charset=utf-8", headers=()):
         if not isinstance(data, bytes):
             data = json.dumps(data, ensure_ascii=False).encode()
         start_response(code, [("Content-Type", mime), ("Content-Length", str(len(data))),
-                              ("X-Content-Type-Options", "nosniff")])
+                              ("X-Content-Type-Options", "nosniff"), *headers])
         return [data]
 
     if env["REQUEST_METHOD"] != "GET":
@@ -102,7 +111,16 @@ def app(env, start_response):
         return params.get(name, [default])[0]
     if path == "/health":
         return send("200 OK", {"status": "ready", "update": status, "past_sources": ARCHIVE.status(), "check_interval_seconds": DAY,
-                               "next_checks_utc": deadlines()})
+                               "next_checks_utc": deadlines(), "vocabulary": VOCABULARY.manifest(), "speech": SPEECH.status()})
+    if path == "/api/vocabulary":
+        return send("200 OK", VOCABULARY.manifest())
+    if path.startswith("/api/vocabulary/") and path.rsplit("/", 1)[-1] in FILES:
+        try:
+            return send("200 OK", VOCABULARY.book(path.rsplit("/", 1)[-1], param("version")))
+        except ValueError:
+            return send("409 Conflict", {"error": "refresh vocabulary manifest"})
+    if path == "/api/audio/status":
+        return send("200 OK", SPEECH.status())
     if path == "/api/ielts/sets":
         return send("200 OK", IELTS_SETS)
     if path == "/api/papers" and param("exam") in ("cet4", "cet6"):
@@ -139,17 +157,10 @@ def app(env, start_response):
         if not audio_slots.acquire(blocking=False):
             return send("503 Service Unavailable", {"error": "speech engine busy"})
         try:
-            voice = ("en-us" if accent == "US" else "en") + ("+f3" if gender == "female" else "")
-            audio = subprocess.run(["espeak-ng", "--stdout", "-v", voice,
-                                    "-s", str(round(160 * rate)), "--stdin"], input=text.encode(),
-                                   stdout=subprocess.PIPE, timeout=8, check=True).stdout
-            # eSpeak writes unknown lengths to a pipe. Android players expect a finite RIFF file.
-            if audio[:4] != b"RIFF" or audio[36:40] != b"data" or len(audio) <= 44:
-                return send("503 Service Unavailable", {"error": "invalid speech output"})
-            audio = (audio[:4] + (len(audio) - 8).to_bytes(4, "little") + audio[8:40]
-                     + (len(audio) - 44).to_bytes(4, "little") + audio[44:])
-            return send("200 OK", audio, "audio/wav")
-        except (OSError, subprocess.SubprocessError):
+            audio, mime, provider = SPEECH.audio(text, accent, gender, rate, cloud_allowed=ARCHIVE.authorized(env))
+            return send("200 OK", audio, mime, [("X-Speech-Engine", provider), ("Cache-Control", "private, max-age=86400")])
+        except Exception:
+            logging.exception("Speech synthesis failed")
             return send("503 Service Unavailable", {"error": "speech unavailable"})
         finally:
             audio_slots.release()

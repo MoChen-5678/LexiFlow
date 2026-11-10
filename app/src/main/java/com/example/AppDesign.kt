@@ -75,6 +75,7 @@ internal fun ActionRow(title: String, subtitle: String, icon: ImageVector, onCli
 internal fun LexiHeader(viewModel: QwertyViewModel) {
     val screen by viewModel.screenState.collectAsState()
     val category by viewModel.selectedCategory.collectAsState()
+    val edition by viewModel.selectedBookEdition.collectAsState()
     var chooseCourse by remember { mutableStateOf(false) }
     if (screen == ScreenState.ONBOARDING) return
     val studying = screen in listOf(ScreenState.TYPING_ARENA, ScreenState.EXAM_PRACTICE, ScreenState.PRACTICE_PREVIEW)
@@ -101,7 +102,7 @@ internal fun LexiHeader(viewModel: QwertyViewModel) {
         if (!studying) {
             Box {
                 TextButton(onClick = { chooseCourse = true }) {
-                    Text(category)
+                    Text("$category · ${editionName(edition)}")
                     Icon(Icons.Outlined.ExpandMore, null, Modifier.size(18.dp))
                 }
                 DropdownMenu(expanded = chooseCourse, onDismissRequest = { chooseCourse = false }) {

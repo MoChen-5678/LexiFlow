@@ -25,19 +25,31 @@ import com.example.ui.*
 @Composable
 internal fun CourseLibraryScreen(viewModel: QwertyViewModel) {
     val category by viewModel.selectedCategory.collectAsState()
+    val edition by viewModel.selectedBookEdition.collectAsState()
     val all by viewModel.allWordsWithProgress.collectAsState()
     val words by viewModel.filteredExplorerWords.collectAsState()
     val query by viewModel.searchQuery.collectAsState()
     val filter by viewModel.selectedMemoryLevelFilter.collectAsState()
+    val sync by viewModel.vocabularyStatus.collectAsState()
+    val syncing by viewModel.vocabularySyncing.collectAsState()
     var tab by rememberSaveable { mutableStateOf("courses") }
     Column(Modifier.fillMaxSize().testTag("word_book_explorer_screen")) {
         Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            FilterChip(tab == "courses", { tab = "courses" }, label = { Text("课程") })
+            FilterChip(tab == "courses", { tab = "courses" }, label = { Text("课程") }, modifier = Modifier.testTag("courses_tab"))
             FilterChip(tab == "words", { tab = "words" }, label = { Text("我的词汇") })
         }
         if (tab == "courses") {
             LazyColumn(Modifier.testTag("course_list"), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 item { SectionTitle("词汇课程") }
+                item {
+                    StudyCard {
+                        Text(sync, style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = { viewModel.refreshVocabulary(true) }, enabled = !syncing) {
+                            Icon(Icons.Outlined.Sync, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp)); Text(if (syncing) "同步中…" else "检查词库更新")
+                        }
+                    }
+                }
                 items(viewModel.categories) { code ->
                     val book = all.filter { it.word.belongsTo(code) }
                     Surface(onClick = { viewModel.selectCategory(code); tab = "words" }, shape = MaterialTheme.shapes.large,
@@ -56,6 +68,18 @@ internal fun CourseLibraryScreen(viewModel: QwertyViewModel) {
                                 if (category == code) Icon(Icons.Outlined.CheckCircle, "正在学习", tint = MaterialTheme.colorScheme.primary)
                                 else Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
+                            val highCount = book.count { it.word.belongsTo(code, "high") }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(category == code && edition == "full", {
+                                    viewModel.selectCategory(code); viewModel.selectBookEdition("full"); tab = "words"
+                                }, label = { Text("全部 ${book.size} 词") }, modifier = Modifier.testTag("edition_${code}_full"))
+                                FilterChip(category == code && edition == "high", {
+                                    viewModel.selectCategory(code); viewModel.selectBookEdition("high"); tab = "words"
+                                }, enabled = highCount > 0, label = { Text(if (highCount > 0) "高频 $highCount 词" else "高频暂无数据") },
+                                    modifier = Modifier.testTag("edition_${code}_high"))
+                            }
+                            Text(frequencyScope(code), style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                             LinearProgressIndicator(progress = { book.count { it.progress != null }.toFloat() / book.size.coerceAtLeast(1) },
                                 modifier = Modifier.fillMaxWidth(), trackColor = MaterialTheme.colorScheme.background, drawStopIndicator = {})
                         }
@@ -70,6 +94,15 @@ internal fun CourseLibraryScreen(viewModel: QwertyViewModel) {
         } else {
             Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(courseName(category), style = MaterialTheme.typography.headlineSmall)
+                val fullCount = all.count { it.word.belongsTo(category) }
+                val highCount = all.count { it.word.belongsTo(category, "high") }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(edition == "full", { viewModel.selectBookEdition("full") }, label = { Text("全部 $fullCount 词") })
+                    FilterChip(edition == "high", { viewModel.selectBookEdition("high") }, enabled = highCount > 0,
+                        label = { Text(if (highCount > 0) "高频 $highCount 词" else "高频暂无数据") })
+                }
+                Text(frequencyScope(category), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(value = query, onValueChange = { viewModel.searchQuery.value = it },
                     placeholder = { Text("搜索单词或中文释义") }, leadingIcon = { Icon(Icons.Outlined.Search, null) },
                     trailingIcon = { if (query.isNotBlank()) IconButton(onClick = { viewModel.searchQuery.value = "" }) { Icon(Icons.Outlined.Close, "清空搜索") } },
@@ -115,7 +148,8 @@ internal fun WordListCard(item: WordWithProgress, speak: (String) -> Unit) {
 internal fun ReviewScreen(viewModel: QwertyViewModel) {
     val words by viewModel.mistakeWords.collectAsState()
     val category by viewModel.selectedCategory.collectAsState()
-    val book = words.filter { it.word.belongsTo(category) }
+    val edition by viewModel.selectedBookEdition.collectAsState()
+    val book = words.filter { it.word.belongsTo(category, edition) }
     LazyColumn(Modifier.fillMaxSize().testTag("mistakes_book_screen"), contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { Text("${book.size} 个词需要巩固", style = MaterialTheme.typography.headlineMedium) }
@@ -149,6 +183,7 @@ private fun SwitchRow(title: String, value: Boolean, action: (Boolean) -> Unit, 
 @Composable
 internal fun PreferencesScreen(viewModel: QwertyViewModel) {
     val category by viewModel.selectedCategory.collectAsState()
+    val edition by viewModel.selectedBookEdition.collectAsState()
     val new by viewModel.dailyNewWordsTarget.collectAsState()
     val review by viewModel.dailyReviewTarget.collectAsState()
     val size by viewModel.wordsPerSession.collectAsState()
@@ -160,6 +195,9 @@ internal fun PreferencesScreen(viewModel: QwertyViewModel) {
     val translate by viewModel.isTranslationVisible.collectAsState()
     val phonetic by viewModel.showPhoneticBeforeAnswer.collectAsState()
     val dark by viewModel.isDarkTheme.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val speechPrefs = remember { context.getSharedPreferences("lexiflow_preferences", 0) }
+    var naturalSpeech by remember { mutableStateOf(speechPrefs.getBoolean("natural_speech", true)) }
     var backup by remember { mutableStateOf(false) }
     var exported by remember { mutableStateOf("") }
     var imported by remember { mutableStateOf("") }
@@ -170,7 +208,7 @@ internal fun PreferencesScreen(viewModel: QwertyViewModel) {
     }
     LazyColumn(Modifier.fillMaxSize().testTag("settings_screen"), contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { ActionRow(courseName(category), "$category · 当前课程", Icons.Outlined.MenuBook,
+        item { ActionRow(courseName(category), "$category · ${editionName(edition)}", Icons.Outlined.MenuBook,
             { viewModel.setScreen(ScreenState.WORD_BOOK_EXPLORER) }) }
         item { SectionTitle("每日计划") }
         item {
@@ -183,11 +221,14 @@ internal fun PreferencesScreen(viewModel: QwertyViewModel) {
         item { SectionTitle("朗读") }
         item {
             StudyCard {
+                SwitchRow("优先自然发音", naturalSpeech, {
+                    naturalSpeech = it; speechPrefs.edit().putBoolean("natural_speech", it).apply()
+                }, "联网获取自然男女声，播放后可离线重听")
                 Text("英语口音", style = MaterialTheme.typography.titleSmall)
                 ChoiceGroup(listOf("US" to "美式英语", "UK" to "英式英语"), accent) { settings(ac = it) }
                 Text("合成声音", style = MaterialTheme.typography.titleSmall)
                 ChoiceGroup(listOf("female" to "女声", "male" to "男声"), gender, viewModel::selectPronunciationGender)
-                TextButton(onClick = { viewModel.speakWord("ability") }) {
+                TextButton(onClick = { viewModel.speakWord("The library opens at 9:30. Please book two tickets for November 21st.") }) {
                     Icon(Icons.Outlined.VolumeUp, null, Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp)); Text("试听当前声音")
                 }
@@ -208,7 +249,7 @@ internal fun PreferencesScreen(viewModel: QwertyViewModel) {
         item { ActionRow("设置备份", "导出或恢复学习偏好", Icons.Outlined.SaveAlt, {
             backup = true; message = ""
         }) }
-        item { Text("LexiFlow · 1.3", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        item { Text("LexiFlow · 1.4", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
     if (backup) AlertDialog(onDismissRequest = { backup = false }, title = { Text("设置备份") }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -239,4 +280,11 @@ internal fun PlanSlider(title: String, current: Int, range: IntRange, unit: Stri
         Slider(value, { value = it }, onValueChangeFinished = { update(value.toInt()) },
             valueRange = range.first.toFloat()..range.last.toFloat())
     }
+}
+
+internal fun editionName(edition: String) = if (edition == "high") "高频词汇" else "全部词汇"
+internal fun frequencyScope(book: String) = when (book) {
+    "CET-4", "CET-6" -> "已收录阅读真题 · 出现至少 2 次的前 1500 词 · 每日更新"
+    "IELTS" -> "已收录口语回忆题 · 出现至少 2 次的前 1500 词 · 每日更新"
+    else -> "尚未收录对应真题，高频版暂无数据"
 }

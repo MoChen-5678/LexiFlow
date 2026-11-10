@@ -55,6 +55,28 @@ class AppNavigationTest {
             compose.onNodeWithTag("nav_explorer").performSemanticsAction(SemanticsActions.OnClick)
             compose.waitUntil { compose.onAllNodesWithTag("course_list").fetchSemanticsNodes().isNotEmpty() }
             compose.onRoot().captureRoboImage("build/reports/ui/courses.png")
+            compose.onNodeWithTag("edition_CET-4_high").performSemanticsAction(SemanticsActions.OnClick)
+            compose.waitUntil(10000) {
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                vm.selectedBookEdition.value == "high" && vm.filteredExplorerWords.value.size == 1326
+            }
+            assertTrue(vm.filteredExplorerWords.value.all { it.word.belongsTo("CET-4", "high") })
+            compose.onRoot().captureRoboImage("build/reports/ui/high-frequency.png")
+            compose.runOnIdle { vm.startPracticeSession(GameMode.CHOICE) }
+            compose.waitUntil(10000) {
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                vm.typingState.value.currentWordList.isNotEmpty()
+            }
+            assertTrue(vm.typingState.value.currentWordList.all { it.word.belongsTo("CET-4", "high") })
+            compose.runOnIdle {
+                vm.selectCategory("IELTS")
+                assertEquals("full", vm.selectedBookEdition.value)
+                vm.selectCategory("CET-4")
+                assertEquals("high", vm.selectedBookEdition.value)
+                vm.selectBookEdition("full")
+                vm.setScreen(ScreenState.WORD_BOOK_EXPLORER)
+            }
+            compose.onNodeWithTag("courses_tab").performSemanticsAction(SemanticsActions.OnClick)
             compose.onNodeWithTag("course_list").performScrollToNode(hasTestTag("course_IELTS"))
             compose.onNodeWithTag("course_IELTS").performSemanticsAction(SemanticsActions.OnClick)
             compose.waitUntil { vm.selectedCategory.value == "IELTS" }

@@ -1,6 +1,6 @@
 services:
   api:
-    image: lexiflow-api:1.2
+    image: lexiflow-api:1.4
     build: .
     restart: unless-stopped
     ports:
@@ -13,5 +13,7 @@ services:
       CET_PAST_BRANCH: ${CET_PAST_BRANCH:-master}
       IELTS_RECALL_REPO: ${IELTS_RECALL_REPO:-eugenewang5425/ielts-corpus-lab}
       IELTS_RECALL_BRANCH: ${IELTS_RECALL_BRANCH:-main}
+      TTS_PROVIDER: ${TTS_PROVIDER:-kokoro}
+      TTS_THREADS: ${TTS_THREADS:-2}
 volumes:
   questions:

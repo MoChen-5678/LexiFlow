@@ -1,12 +1,18 @@
 {
-  "totalUniqueWords": 4864,
+  "totalUniqueWords": 13014,
   "categoryBreakdown": {
-    "cet4": 1500,
-    "cet6": 1500,
-    "ielts": 1500,
-    "toefl": 1500,
-    "coder": 1500
+    "cet4": 5159,
+    "cet6": 6324,
+    "ielts": 10672,
+    "toefl": 5988,
+    "coder": 1700
   },
-  "timestamp": 1782244094666,
-  "buildVersion": "2.0.0"
+  "buildVersion": "1.4",
+  "highFrequencyBreakdown": {
+    "cet4": 1326,
+    "cet6": 1500,
+    "ielts": 1076,
+    "toefl": 0,
+    "coder": 0
+  }
 }

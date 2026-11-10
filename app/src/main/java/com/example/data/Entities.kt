@@ -21,8 +21,9 @@ data class Word(
     val examplesJson: String = "" // Serialized array of examples for extra questions
 )
 
-fun Word.belongsTo(book: String): Boolean {
+fun Word.belongsTo(book: String, edition: String = "full"): Boolean {
     val key = book.replace("-", "")
+    if (edition == "high") return bookIds.split(",").any { it.trim().equals(key + "_high", true) }
     return category.replace("-", "").equals(key, true) || bookIds.split(",").any { it.trim().equals(key, true) }
 }
 

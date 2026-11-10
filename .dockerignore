@@ -2,6 +2,16 @@
 !Dockerfile
 !server/
 !server/*.py
+!server/requirements.txt
+!server-wheels/
+!server-wheels/*.whl
+!server-wheels/.keep
+!models/
+!models/*.onnx
+!models/*.bin
+!models/.keep
+!licenses/
+!licenses/*.txt
 !app/src/main/assets/exam_questions.json
 !app/src/main/assets/ielts_sets.json
 !app/
@@ -12,3 +22,9 @@
 !app/src/main/assets/dicts/cet4.json
 !app/src/main/assets/dicts/cet6.json
 !app/src/main/assets/dicts/ielts.json
+!app/src/main/assets/dicts/toefl.json
+!app/src/main/assets/dicts/coder.json
+!app/src/main/assets/vocabulary_sources.json
+!app/src/main/assets/vocabulary_license.txt
+
+!app/src/main/assets/exam_frequency.json

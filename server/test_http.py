@@ -54,6 +54,29 @@ class ApiTest(unittest.TestCase):
             self.assertEqual(caught.exception.code, status)
         self.assertEqual(json.loads(self.get("/health"))["status"], "ready")
 
+    def test_vocabulary_versions_and_natural_provider(self):
+        import hashlib
+        manifest = json.loads(self.get("/api/vocabulary"))
+        self.assertIn(manifest["state"], ("ok", "checking", "bundled", "failed"))
+        for book, entry in manifest["books"].items():
+            body = self.get("/api/vocabulary/" + book + "?version=" + entry["version"])
+            self.assertEqual(hashlib.sha256(body).hexdigest(), entry["version"])
+            self.assertEqual(len(json.loads(body)), entry["count"])
+            self.assertGreater(entry["count"], 1500)
+            rows = json.loads(body)
+            self.assertEqual(entry["high_count"], sum(book + "_high" in row["bookIds"].split(",") for row in rows))
+            if book in ("cet4", "cet6", "ielts"):
+                self.assertGreater(entry["high_count"], 500)
+                self.assertLessEqual(entry["high_count"], 1500)
+                self.assertIn(book, manifest["frequency"])
+            else:
+                self.assertEqual(entry["high_count"], 0)
+        with self.assertRaises(HTTPError) as caught:
+            self.get("/api/vocabulary/cet4?version=stale")
+        self.assertEqual(caught.exception.code, 409)
+        with urlopen(BASE + "/api/audio?text=ability", timeout=20) as response:
+            self.assertIn(response.headers["X-Speech-Engine"], ("kokoro", "tencent"))
+
 
 if __name__ == "__main__":
     unittest.main()

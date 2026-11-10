@@ -19,3 +19,9 @@ debug.keystore
 
 /app/build/
 __pycache__/
+models/*
+!models/.keep
+SecretKey.csv
+*.secret.csv
+server-wheels/*
+!server-wheels/.keep

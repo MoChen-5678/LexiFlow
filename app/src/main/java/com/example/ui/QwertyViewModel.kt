@@ -92,6 +92,15 @@ class QwertyViewModel(
     
     private val _selectedCategory = MutableStateFlow(prefs.getString("selected_category", "CET-4") ?: "CET-4")
     val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
+    val selectedBookEdition = MutableStateFlow(editionFor(_selectedCategory.value))
+    fun editionFor(category: String): String = if (category in listOf("CET-4", "CET-6", "IELTS") &&
+        prefs.getString("book_edition_$category", "full") == "high") "high" else "full"
+    fun selectBookEdition(edition: String) {
+        if (edition !in listOf("full", "high")) return
+        if (edition == "high" && _selectedCategory.value !in listOf("CET-4", "CET-6", "IELTS")) return
+        selectedBookEdition.value = edition
+        prefs.edit().putString("book_edition_${_selectedCategory.value}", edition).apply()
+    }
 
     // Preferences configuration
     val dailyNewWordsTarget = MutableStateFlow(prefs.getInt("daily_new_words", 10))
@@ -158,23 +167,10 @@ class QwertyViewModel(
     val searchQuery = MutableStateFlow("")
     val selectedMemoryLevelFilter = MutableStateFlow("ALL") // "ALL", "NEW" (0), "1", "2", "3", "4", "5", "DUE"
     
-    val filteredExplorerWords = combine(allWordsWithProgress, searchQuery, selectedMemoryLevelFilter, _selectedCategory) { list, query, level, cat ->
+    val filteredExplorerWords = combine(allWordsWithProgress, searchQuery, selectedMemoryLevelFilter, _selectedCategory, selectedBookEdition) { list, query, level, cat, edition ->
         val now = System.currentTimeMillis()
         list.filter { item ->
-            val matchesCategory = if (cat.equals("all", ignoreCase = true)) {
-                true
-            } else {
-                val normalizedFilter = when (cat.uppercase()) {
-                    "CET-4" -> "cet4"
-                    "CET-6" -> "cet6"
-                    "IELTS" -> "ielts"
-                    "TOEFL" -> "toefl"
-                    "CODER" -> "coder"
-                    else -> cat.lowercase()
-                }
-                item.word.category.equals(cat, ignoreCase = true) ||
-                item.word.bookIds.split(",").map { it.trim().lowercase() }.contains(normalizedFilter)
-            }
+            val matchesCategory = cat.equals("all", true) || item.word.belongsTo(cat, edition)
             val matchesQuery = query.isEmpty() || item.word.word.contains(query, ignoreCase = true) || item.word.translation.contains(query, ignoreCase = true)
             
             val matchesLevel = when (level) {
@@ -199,11 +195,11 @@ class QwertyViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Computed smart list values for the Personalized Study Planner
-    val smartTodayPlan = combine(allWordsWithProgress, _selectedCategory) { list, category ->
+    val smartTodayPlan = combine(allWordsWithProgress, _selectedCategory, selectedBookEdition) { list, category, edition ->
         val now = System.currentTimeMillis()
         
         // Split reviews into due incorrect (error history / low memory level) and due correct
-        val book = list.filter { it.word.belongsTo(category) }
+        val book = list.filter { it.word.belongsTo(category, edition) }
         val dueReviews = book.filter {
             it.progress != null && it.progress.nextReviewTime <= now
         }
@@ -233,6 +229,7 @@ class QwertyViewModel(
         viewModelScope.launch {
             loadSentenceExamples()
             repository.ensureWordsPopulated(getApplication())
+            repository.syncVocabulary(getApplication())
         }
         // Redirect to onboarding if not completed
         if (!onboardingCompleted.value) {
@@ -241,6 +238,15 @@ class QwertyViewModel(
     }
 
     // Navigation and setters
+    val vocabularyStatus = repository.vocabularyStatus
+    val vocabularySyncing = repository.vocabularySyncing
+    fun refreshVocabulary(force: Boolean = false) {
+        viewModelScope.launch {
+            repository.ensureWordsPopulated(getApplication())
+            repository.syncVocabulary(getApplication(), force)
+        }
+    }
+
     fun setScreen(state: ScreenState) {
         _screenState.value = state
     }
@@ -251,12 +257,14 @@ class QwertyViewModel(
 
     fun selectCategory(category: String) {
         _selectedCategory.value = category
+        selectedBookEdition.value = editionFor(category)
         prefs.edit().putString("selected_category", category).apply()
     }
 
     fun saveOnboardingSettings(category: String, dailyNew: Int, dailyReview: Int, wordsSession: Int) {
         viewModelScope.launch {
             _selectedCategory.value = category
+            selectedBookEdition.value = editionFor(category)
             dailyNewWordsTarget.value = dailyNew
             dailyReviewTarget.value = dailyReview
             wordsPerSession.value = wordsSession
@@ -327,6 +335,7 @@ class QwertyViewModel(
             val totalLimit = wordsPerSession.value.coerceAtLeast(20)
             val currentCategoryWords = repository.getWordsWithProgressByCategory(_selectedCategory.value).first()
             val enrichedCategoryWords = currentCategoryWords.map { enrichWordWithProgress(it) }.filter {
+                it.word.belongsTo(_selectedCategory.value, selectedBookEdition.value) &&
                 (!mistakesOnly || (it.progress?.wrongAttempts ?: 0) > 0) &&
                     (mode !in listOf(GameMode.TYPING, GameMode.CLOZE) ||
                     (it.word.exampleSentence.isNotBlank() && sentenceContains(it.word.exampleSentence, it.word.word)))
@@ -810,6 +819,7 @@ class QwertyViewModel(
             
             val settings = JSONObject().apply {
                 put("category", _selectedCategory.value)
+                put("bookEditions", JSONObject().apply { categories.forEach { put(it, editionFor(it)) } })
                 put("dailyNew", dailyNewWordsTarget.value)
                 put("dailyReview", dailyReviewTarget.value)
                 put("wordsSession", wordsPerSession.value)
@@ -832,6 +842,13 @@ class QwertyViewModel(
             
             val settings = root.getJSONObject("settings")
             _selectedCategory.value = settings.optString("category", "CET-4")
+            settings.optJSONObject("bookEditions")?.let { editions ->
+                categories.forEach { category ->
+                    val value = editions.optString(category, "full")
+                    if (value in listOf("full", "high")) prefs.edit().putString("book_edition_$category", value).commit()
+                }
+            }
+            selectedBookEdition.value = editionFor(_selectedCategory.value)
             dailyNewWordsTarget.value = settings.optInt("dailyNew", 10)
             dailyReviewTarget.value = settings.optInt("dailyReview", 15)
             wordsPerSession.value = settings.optInt("wordsSession", 20)

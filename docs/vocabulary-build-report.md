@@ -1,21 +1,13 @@
-# LexiFlow Vocabulary Build Report
+# LexiFlow 1.4 词库
 
-Generated on: 2026-06-23T19:48:14.666Z
+去重词条：13,014。实际使用例句：5,782，其中双语例句：3,857。
 
-## Data Overview
+- cet4: 5159
+- cet6: 6324
+- ielts: 10672
+- toefl: 5988
+- coder: 1700
 
-- **Total Unique Unified Words**: 4864
-- **Build Version**: 2.0.0
+数据源与许可见 THIRD_PARTY.md。上游版本见 vocabulary_sources.json。
 
-## Category Word Counts
-- **CET-4**: 1500 words
-- **CET-6**: 1500 words
-- **IELTS**: 1500 words
-- **TOEFL**: 1500 words
-- **Coder**: 1500 words
-
-## Key Rules Followed:
-1. **Uniqueness**: Words are saved strictly once globally in the database.
-2. **Book Relation**: Multi-book relation is represented via the CSV `bookIds` string field.
-3. **High-Quality Examples**: Fallback generators paired with live vocabulary-examples are used to guarantee no empty strings.
-4. **Cloze Masking**: Morphological-aware sentence clozing masks target words completely without leaking lengths.
+高频版：四级 1,326，六级 1,500，雅思口语回忆 1,076。只使用当前收录真题的重复词频，每篇文章每套卷只计一次，出现至少两次且最多选取 1,500 个词条。托福及程序员英语暂无对应真题数据。高频版与全部版共用学习记录。

@@ -2,6 +2,46 @@
 
 LexiFlow 是 Android 背词和备考应用。首页的「四六级 · 雅思备考练习」提供四级、六级和雅思的阅读、听力、填空、词义和听写。提交后可查看答案与解析，完成一组后可查看成绩。断网时，App 使用上次下载的同类题组或内置练习。
 
+
+## 1.4 词库与自然语音
+
+请同时升级 App 和服务端至 1.4。内置词库共有 **13,014 个去重词条**，覆盖以下课程，课程之间有重叠。
+
+| 课程 | 全部词汇 | 高频词汇 |
+| --- | ---: | ---: |
+| 四级（含高中基础） | 5,159 | 1,326 |
+| 六级（含四级基础） | 6,324 | 1,500 |
+| 雅思（含听力场景） | 10,672 | 1,076 |
+| 托福 | 5,988 | 暂无真题数据 |
+| 程序员英语 | 1,700 | 暂无真题数据 |
+
+课程页可选择「高频词汇」和「全部词汇」，显示各版实际词数，并分别记住每个课程的版本。词汇列表、新词计划、练习、错题及单词进度统计按所选版本筛选。两版共用单词 ID 和学习记录，切换不会重置熟练度；历史练习记录按课程共用。设置备份同时保存各课程的版本。
+
+高频版依据当前已收录试题统计：四级和六级各 12 套 2024–2025 年试卷的阅读、选词填空、段落匹配正文及题目选项；雅思采用 5,326 条已注明考期、地区和来源的口语回忆题。没有文字稿的听力不参与统计。按英语单词或不超过 5 个词的短语精确匹配、忽略大小写，不合并词形。同篇文章在每套卷内只计算一次，重复选项和题干同样去重。各课程取出现至少两次、频次最高的至多 1,500 个已收录词条，同频按字母排序，因此词数取决于当前题库。雅思高频版反映口语回忆题用词，不能代表雅思阅读、听力的全部高频词。
+
+题源每日检查完成后，本地重新统计高频名单，不增加上游请求。词库源更新时也会按现有真题重新筛选。频次变化后可以加入或移出高频版，原学习记录继续保留。内置聚合词频及来源版本保存在 `app/src/main/assets/exam_frequency.json`；服务端优先使用当前本地题库，尚未同步时使用内置快照。`/api/vocabulary` 同时返回 `high_count`、统计范围、试卷列表和来源版本。
+
+服务器每 24 小时通过国内 GitHub 镜像检查上游固定提交，校验全部词表后一次发布新版本。下载失败或词表异常缩减时保留上一版。App 启动、回到前台时检查服务器词库，自动检查间隔至少 15 分钟；课程页可随时手动检查。App 按版本只下载有变化的词表，校验 SHA-256 后事务合并，保留原词条 ID、熟练度、错题和学习记录。升级旧版会先导入新的内置词表。已有旧词也会保留，因此升级后的本地总数可能略高于新装。
+
+`GET /api/vocabulary` 返回词表版本、数量、上次检查与状态。`GET /api/vocabulary/{book}?version={sha256}` 下载对应词表，版本变更返回 409。App 刷新只读取已发布词表，不会额外触发上游检查。上游没有新内容时不会虚构新增词。
+
+默认自然语音采用本机 CPU 运行的 Kokoro-82M，支持美式女声/男声、英式女声/男声。镜像包含模型，运行时无需下载模型或调用付费 API。服务器和 App 分别缓存音频，语速在 App 播放时调整。`/api/audio/status` 可查看引擎与音色。长文按英语文本分段，数字使用所选英语口音处理。关闭设置中的「优先自然发音」可优先使用原离线包。
+
+WSL 实测：包含时刻、日期、金额的四种语音均生成可解码的 24 kHz WAV，约 10 秒音频首次生成用时 4–6 秒，服务端缓存命中约 0.2 毫秒。首次预热也需要数秒。内存与耗时取决于服务器配置，推荐至少 2 核、2 GB 内存。测试使用 linux/amd64 镜像，未做 Android 真机试听。
+
+腾讯云作为可选服务端方案保留。当前环境连接官方接入点超时，尚未取得腾讯云音频样本，因此默认部署使用已完成合成测试的 Kokoro。腾讯云接口、音色与签名参考 [基础语音合成文档](https://cloud.tencent.com/document/product/1073/37995) 和 [TC3 签名文档](https://cloud.tencent.com/document/api/213/30654)。提供的 Android SDK 不需要安装到 APK。
+
+如需启用腾讯云，把 CSV 放在服务器的私有目录，通过运行时只读 secret 挂载：
+
+```sh
+export TENCENT_CSV_PATH=/absolute/private/SecretKey.csv
+docker compose -p lexiflow -f compose.yaml -f compose.tencent.yaml up -d --no-build --wait
+```
+
+云语音需要 App 已填写个人学习码并对请求签名，默认每天最多提交 20,000 字符，避免公开接口产生任意调用费用。当前云音色配置为美式男女声，英式继续使用 Kokoro。密钥缺失、限额或接口失败时回退到本地自然语音。CSV 仅由服务器读取，镜像、Git 和 APK 均不附带密钥。
+
+词表可运行 `python scripts/update-vocabulary.py` 或 `npm run build:vocabulary` 重新生成。构建使用同一套源与校验规则，删除了旧入口的占位词和模板例句生成流程。来源与许可证见 [THIRD_PARTY.md](THIRD_PARTY.md)。
+
 ## 运行题库服务
 
 在包含 `compose.yaml` 的目录运行以下命令，首次部署会构建镜像。
@@ -14,8 +54,8 @@ curl http://127.0.0.1:5000/health
 离线部署包内含镜像、Compose 配置和启动脚本。解压后运行 `sh deploy.sh` 即可加载镜像、启动服务并等待健康检查通过。也可以手动加载镜像并运行独立容器。
 
 ```sh
-docker load -i lexiflow-api-1.2.tar.gz
-docker run -d --name lexiflow-api --restart unless-stopped -p 5000:5000 -v lexiflow-questions:/data lexiflow-api:1.2
+docker load -i lexiflow-api-1.4.tar.gz
+docker run -d --name lexiflow-api --restart unless-stopped -p 5000:5000 -v lexiflow-questions:/data lexiflow-api:1.4
 ```
 
 服务监听 TCP 5000，仅返回 JSON 或音频。根路径返回 JSON 404。SQLite 题库保存在数据卷中，更新镜像时使用原来的数据卷。App 默认连接 `47.109.146.2:5000`，学习界面不显示地址。公网端口是否可达取决于主机防火墙和云安全组设置。
@@ -52,7 +92,7 @@ App 将学习码保存在设备的私有、不参与备份的目录。每次请�
 
 ## 国内镜像与离线部署
 
-离线部署包可直接加载本地镜像，启动无需访问 Docker Hub。源码构建通过 DaoCloud 下载按摘要锁定的 Python 基础镜像，Debian 软件包使用华为云镜像。
+离线部署包可直接加载本地镜像，启动无需访问 Docker Hub。源码构建通过 DaoCloud 下载按摘要锁定的 Python 基础镜像，Debian 软件包使用华为云镜像。Python 依赖固定版本和 SHA-256，源码构建配置清华镜像。离线包已包含全部依赖和语音模型，无需在部署时下载。
 
 Git 版本查询优先通过 GH-Proxy，失败时切换到 ghfast。试卷和词库 JSON 使用 JSDMirror 国内域名，失败时切换 GH-Proxy 和 ghfast。所有文件按固定提交读取。App 播放原卷录音时也按这三条镜像线路依次尝试。查看原始来源按钮保留原发布者链接。
 
@@ -62,14 +102,14 @@ Git 版本查询优先通过 GH-Proxy，失败时切换到 ghfast。试卷和词
 
 模拟器连接本机 WSL 服务时可使用 `-PlexiflowHost=10.0.2.2` 编译。USB 真机本地测试可使用 `-PlexiflowHost=127.0.0.1` 编译，再运行 `adb reverse tcp:5000 tcp:5000`。
 
-朗读可选择英式、美式口音及男声、女声。词库单词和整组雅思材料随 APK 提供四套离线音频。其他英文文本由服务端用所选英语声音合成，长文章会分段朗读。中文界面说明不参与英文朗读。设置中的「试听」播放当前声音。
+朗读可选择英式、美式口音及男声、女声，默认优先获取服务器自然语音。音频在 App 缓存后可离线重听。首次获取失败时会提示并尝试 APK 原有离线发音。长文章分段朗读。中文界面说明不参与英文朗读。设置中的「试听」播放当前声音。
 
-听写和拼写练习参考 [Qwerty Learner](https://github.com/RealKai42/qwerty-learner)。离线发音和服务端语音使用 [eSpeak NG](https://github.com/espeak-ng/espeak-ng)。在安装 eSpeak NG 和 libmp3lame 的 Linux 环境下，可用 `scripts/build-pronunciations.py` 重新生成音频包，两个参数分别为 App 的 assets 目录和 audio 输出目录。
+听写和拼写练习参考 [Qwerty Learner](https://github.com/RealKai42/qwerty-learner)。APK 的原有离线回退发音使用 [eSpeak NG](https://github.com/espeak-ng/espeak-ng)。服务端默认使用 Kokoro 自然语音。在安装 eSpeak NG 和 libmp3lame 的 Linux 环境下，可用 `scripts/build-pronunciations.py` 重新生成音频包，两个参数分别为 App 的 assets 目录和 audio 输出目录。
 
 
 ## 1.2 练习内容
 
-背词入口使用例句填空，依次显示英文挖空句、中文释义与答案输入框，提交后显示完整句、答案与下一词。已收录 4,088 个单词的实际使用例句，例句练习队列采用已配有效语境的词汇。例句来自 Tatoeba/ManyThings 和 Princeton WordNet，句子作者信息保存在 word_examples.json，许可文本随应用提供。
+背词入口使用例句填空，依次显示英文挖空句、中文释义与答案输入框，提交后显示完整句、答案与下一词。已收录 5,782 个单词的实际使用例句，例句练习队列采用已配有效语境的词汇。例句来自 Tatoeba/ManyThings 和 Princeton WordNet，句子作者信息保存在 word_examples.json，许可文本随应用提供。
 
 雅思原创专项练习含两篇学术阅读、两段完整听力，共 40 题。每组共享文章或录音，支持 TRUE/FALSE/NOT GIVEN、选择题和限词填空。整组交卷后给出逐题答案、原文依据与中文解析，听力文字稿在交卷后显示。材料可离线作答及朗读。
 

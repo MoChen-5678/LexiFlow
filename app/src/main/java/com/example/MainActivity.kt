@@ -30,6 +30,14 @@ class MainActivity : ComponentActivity() {
             val repository = WordRepository(database.wordDao())
             val factory = QwertyViewModelFactory(applicationContext as Application, repository)
             val viewModel: QwertyViewModel = viewModel(factory = factory)
+            val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+            DisposableEffect(lifecycleOwner, viewModel) {
+                val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                    if (event == androidx.lifecycle.Lifecycle.Event.ON_START) viewModel.refreshVocabulary()
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+            }
             val isDark by viewModel.isDarkTheme.collectAsState()
             SideEffect {
                 androidx.core.view.WindowCompat.getInsetsController(window, window.decorView).apply {

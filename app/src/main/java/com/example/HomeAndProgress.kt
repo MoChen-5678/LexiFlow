@@ -23,7 +23,7 @@ import java.util.*
 
 internal data class HomeOverview(
     val course: String, val today: Int, val target: Int, val total: Int, val learned: Int,
-    val due: Int, val newTarget: Int, val week: List<Int>, val weekdays: List<String>
+    val due: Int, val newTarget: Int, val week: List<Int>, val weekdays: List<String>, val edition: String = "全部词汇"
 )
 
 internal fun dayKey(time: Long): String = SimpleDateFormat("yyyyMMdd", Locale.ROOT).format(Date(time))
@@ -36,11 +36,12 @@ internal fun weeklyCounts(sessions: List<TypingSession>): List<Int> = (6 downTo 
 @Composable
 internal fun HomeScreen(viewModel: QwertyViewModel) {
     val category by viewModel.selectedCategory.collectAsState()
+    val edition by viewModel.selectedBookEdition.collectAsState()
     val words by viewModel.allWordsWithProgress.collectAsState()
     val sessions by viewModel.allSessions.collectAsState()
     val newTarget by viewModel.dailyNewWordsTarget.collectAsState()
     val reviewTarget by viewModel.dailyReviewTarget.collectAsState()
-    val book = words.filter { it.word.belongsTo(category) }
+    val book = words.filter { it.word.belongsTo(category, edition) }
     val history = sessions.filter { it.category == category }
     val now = System.currentTimeMillis()
     HomeContent(
@@ -50,7 +51,7 @@ internal fun HomeScreen(viewModel: QwertyViewModel) {
             weeklyCounts(history), (6 downTo 0).map { days ->
                 val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -days) }
                 listOf("日", "一", "二", "三", "四", "五", "六")[cal.get(Calendar.DAY_OF_WEEK) - 1]
-            }),
+            }, editionName(edition)),
         start = { viewModel.startPracticeSession(GameMode.TYPING, true) },
         courses = { viewModel.setScreen(ScreenState.WORD_BOOK_EXPLORER) },
         progress = { viewModel.setScreen(ScreenState.STATS_HISTORY) },
@@ -111,7 +112,7 @@ internal fun HomeContent(data: HomeOverview, start: () -> Unit, courses: () -> U
         item {
             StudyCard {
                 Text(courseName(data.course), style = MaterialTheme.typography.titleLarge)
-                Text(data.course, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${data.course} · ${data.edition}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 LinearProgressIndicator(progress = { data.learned.toFloat() / data.total.coerceAtLeast(1) },
                     modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape),
                     trackColor = MaterialTheme.colorScheme.background, drawStopIndicator = {})
@@ -137,9 +138,10 @@ internal fun HomeContent(data: HomeOverview, start: () -> Unit, courses: () -> U
 @Composable
 internal fun ProgressScreen(viewModel: QwertyViewModel) {
     val category by viewModel.selectedCategory.collectAsState()
+    val edition by viewModel.selectedBookEdition.collectAsState()
     val allWords by viewModel.allWordsWithProgress.collectAsState()
     val allSessions by viewModel.allSessions.collectAsState()
-    val words = allWords.filter { it.word.belongsTo(category) }
+    val words = allWords.filter { it.word.belongsTo(category, edition) }
     val sessions = allSessions.filter { it.category == category }
     val week = weeklyCounts(sessions)
     var reset by remember { mutableStateOf(false) }
@@ -147,7 +149,7 @@ internal fun ProgressScreen(viewModel: QwertyViewModel) {
         contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
             Text(courseName(category), style = MaterialTheme.typography.headlineMedium)
-            Text(category, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Text("$category · ${editionName(edition)}", color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp))
         }
         item {

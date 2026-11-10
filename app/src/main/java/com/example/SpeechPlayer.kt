@@ -19,6 +19,9 @@ internal class SpeechPlayer(private val context: Context) {
     private var generation = 0
     private var player: MediaPlayer? = null
     private var closed = false
+    private val downloads = java.util.concurrent.Executors.newSingleThreadExecutor()
+    private val cache = java.io.File(context.cacheDir, "natural-speech-v1").apply { mkdirs() }
+    private var download: java.util.concurrent.Future<*>? = null
 
     fun play(text: String, accent: String, speed: Float, gender: String = "female") {
         if (closed) return
@@ -28,19 +31,105 @@ internal class SpeechPlayer(private val context: Context) {
         val request = generation
         val pack = if (gender == "female") "$accent-female" else accent
         val rate = speed.coerceIn(0.5f, 2f)
-        if (playLocal(english, pack, rate, request) {}) return
+        val natural = context.getSharedPreferences("lexiflow_preferences", 0).getBoolean("natural_speech", true)
+        if (!natural && playLocal(english, pack, rate, request) {}) return
         val chunks = speechChunks(english)
+        var warned = false
         fun next(index: Int) {
             if (generation != request || closed || index >= chunks.size) return
             val chunk = chunks[index]
-            if (!playLocal(chunk, pack, rate, request) { next(index + 1) }) {
-                val url = Uri.parse(BuildConfig.API_BASE + "/api/audio").buildUpon()
-                    .appendQueryParameter("text", chunk).appendQueryParameter("accent", accent)
-                    .appendQueryParameter("gender", gender).appendQueryParameter("speed", rate.toString()).build().toString()
-                playMedia(request, onDone = { next(index + 1) }, onFailure = ::failed) { setDataSource(url) }
+            val done = { next(index + 1) }
+            val fallback = {
+                if (!warned) {
+                    Toast.makeText(context, "自然语音暂不可用，尝试离线发音", Toast.LENGTH_SHORT).show()
+                    warned = true
+                }
+                if (!playLocal(chunk, pack, rate, request, done)) failed()
             }
+            if (!natural && playLocal(chunk, pack, rate, request, done)) return
+            playNatural(chunk, accent, gender, rate, request, done, fallback, onReady = {
+                if (index + 1 < chunks.size) {
+                    playNatural(chunks[index + 1], accent, gender, rate, request, {}, {}, prefetch = true)
+                }
+            })
         }
         next(0)
+    }
+
+    private fun playNatural(text: String, accent: String, gender: String, rate: Float, request: Int,
+                            done: () -> Unit, fallback: () -> Unit, prefetch: Boolean = false, onReady: () -> Unit = {}) {
+        val key = java.security.MessageDigest.getInstance("SHA-256").digest("$accent|$gender|$text".toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        val file = java.io.File(cache, "$key.audio")
+        if (file.exists()) {
+            if (prefetch) return
+            file.setLastModified(System.currentTimeMillis())
+            playMedia(request, rate, done, {
+                file.delete(); fallback()
+            }) { setDataSource(file.absolutePath) }
+            onReady()
+            return
+        }
+        download = downloads.submit {
+            var ready = false
+            try {
+                val uri = Uri.parse(BuildConfig.API_BASE + "/api/audio").buildUpon()
+                    .appendQueryParameter("text", text).appendQueryParameter("accent", accent)
+                    .appendQueryParameter("gender", gender).appendQueryParameter("speed", "1").build()
+                val connection = java.net.URL(uri.toString()).openConnection() as java.net.HttpURLConnection
+                try {
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 20000
+                    val keyFile = java.io.File(context.noBackupFilesDir, "study-key")
+                    if (keyFile.exists()) {
+                        val stamp = (System.currentTimeMillis() / 1000).toString()
+                        val mac = javax.crypto.Mac.getInstance("HmacSHA256")
+                        mac.init(javax.crypto.spec.SecretKeySpec(keyFile.readText().trim().toByteArray(), "HmacSHA256"))
+                        val path = uri.encodedPath + "?" + uri.encodedQuery
+                        val signature = mac.doFinal((stamp + "\n" + path).toByteArray()).joinToString("") { "%02x".format(it) }
+                        connection.setRequestProperty("X-Study-Time", stamp)
+                        connection.setRequestProperty("X-Study-Signature", signature)
+                    }
+                    check(connection.responseCode == 200)
+                    check(connection.getHeaderField("X-Speech-Engine") in listOf("kokoro", "tencent"))
+                    val mime = connection.contentType.orEmpty().substringBefore(';')
+                    check(mime in listOf("audio/wav", "audio/mpeg"))
+                    val temp = java.io.File(cache, "$key.tmp")
+                    try {
+                        connection.inputStream.use { input -> temp.outputStream().use { out ->
+                            val buffer = ByteArray(8192)
+                            var total = 0
+                            while (true) {
+                                val count = input.read(buffer)
+                                if (count == -1) break
+                                total += count
+                                check(total <= 8_000_000 && !Thread.currentThread().isInterrupted)
+                                out.write(buffer, 0, count)
+                            }
+                            check(total > 100)
+                        } }
+                        check(temp.renameTo(file))
+                        ready = true
+                        val files = cache.listFiles()?.filter { it.extension == "audio" }.orEmpty()
+                        var size = files.sumOf { it.length() }
+                        for (old in files.sortedBy { it.lastModified() }) {
+                            if (size <= 64_000_000) break
+                            if (old != file) { size -= old.length(); old.delete() }
+                        }
+                    } finally { temp.delete() }
+                } finally { connection.disconnect() }
+            } catch (_: Exception) { }
+            val success = ready
+            main.post {
+                if (request == generation && !closed && !prefetch) {
+                    if (success) {
+                        playMedia(request, rate, done, fallback) { setDataSource(file.absolutePath) }
+                        onReady()
+                    }
+                    else fallback()
+                }
+            }
+        }
     }
 
     private fun playLocal(text: String, pack: String, rate: Float, request: Int, done: () -> Unit): Boolean {
@@ -105,6 +194,8 @@ internal class SpeechPlayer(private val context: Context) {
 
     fun stop() {
         generation++
+        download?.cancel(true)
+        download = null
         main.removeCallbacksAndMessages(null)
         player?.release()
         player = null
@@ -113,6 +204,7 @@ internal class SpeechPlayer(private val context: Context) {
     fun close() {
         stop()
         closed = true
+        downloads.shutdownNow()
     }
 }
 
@@ -124,7 +216,7 @@ internal fun speechChunks(text: String): List<String> {
     val chunks = mutableListOf<String>()
     var current = ""
     for (word in text.split(Regex("\\s+"))) {
-        if (current.length + word.length + 1 > 650) {
+        if (current.length + word.length + 1 > 350) {
             if (current.isNotBlank()) chunks += current
             current = ""
         }

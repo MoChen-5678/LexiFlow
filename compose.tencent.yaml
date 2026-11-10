@@ -1,0 +1,13 @@
+# Optional: the CSV stays on the host and is mounted read-only at runtime.
+services:
+  api:
+    environment:
+      TTS_PROVIDER: tencent
+      TENCENT_CREDENTIALS_FILE: /run/secrets/tencent.csv
+      TENCENT_TTS_HOST: ${TENCENT_TTS_HOST:-tts.tencentcloudapi.com}
+      TTS_DAILY_CHAR_LIMIT: ${TTS_DAILY_CHAR_LIMIT:-20000}
+    secrets:
+      - tencent
+secrets:
+  tencent:
+    file: ${TENCENT_CSV_PATH:?Set TENCENT_CSV_PATH to the private SecretKey.csv path}
